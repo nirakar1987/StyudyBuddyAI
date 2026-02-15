@@ -1,0 +1,8 @@
+{
+  "name": "AI Sneha Tutor",
+  "description": "An AI-powered e-learning platform featuring an interactive video avatar that acts as a personal home tutor for students from 1st to 10th standard. Students can learn, practice for exams, and get real-time feedback through voice-based conversations. The platform can also generate customized quizzes from uploaded or photographed study materials.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
