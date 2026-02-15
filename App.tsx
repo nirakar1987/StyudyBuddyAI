@@ -13,6 +13,7 @@ import { supabase, isSupabaseConfigured } from './services/supabaseClient';
 import { getProfile, upsertProfile, addQuizAttempt } from './services/databaseService';
 import UserPresence from './components/UserPresence';
 import ChatNotificationPopup from './components/ChatNotificationPopup';
+import MobileNav from './components/MobileNav';
 import { ChatMessageRow } from './services/databaseService';
 
 
@@ -505,7 +506,8 @@ const App: React.FC = () => {
           </div>
         ) : (
           <>
-            <div className="lg:w-80 xl:w-96 flex-shrink-0 no-print flex flex-col gap-6 h-fit sticky top-4">
+            {/* Desktop Sidebar - Hidden on Mobile */}
+            <div className="hidden lg:flex lg:w-80 xl:w-96 flex-shrink-0 no-print flex-col gap-6 h-fit sticky top-4">
               <Avatar
                 avatarState={avatarState}
                 studentProfile={studentProfile}
@@ -536,7 +538,7 @@ const App: React.FC = () => {
               </div>
               <UserPresence user={user} onlineUsers={onlineUsers} startGlobalChat={handleStartGlobalChat} />
             </div>
-            <div className="flex-grow w-full h-full min-h-[calc(100vh-160px)]">
+            <div className="flex-grow w-full h-full min-h-[calc(100vh-160px)] pb-24 lg:pb-0">
               <InteractionPanel context={contextValue} />
             </div>
           </>
@@ -550,6 +552,12 @@ const App: React.FC = () => {
           onDismiss={handleDismissNotification}
         />
       )}
+      {/* Mobile Navigation Bar */}
+      <MobileNav
+        appState={appState}
+        setAppState={handleStateChange}
+        studentProfile={studentProfile}
+      />
     </div>
   );
 };
