@@ -93,7 +93,7 @@ const InteractionPanel: React.FC<InteractionPanelProps> = ({ context }) => {
   };
 
   return (
-    <div className="bg-[var(--color-surface)] rounded-lg shadow-lg p-6 h-full w-full">
+    <div className="bg-[var(--color-surface)] rounded-lg shadow-lg p-4 md:p-6 h-full w-full overflow-y-auto custom-scrollbar">
       {renderContent()}
     </div>
   );

@@ -68,7 +68,7 @@ const Dashboard: React.FC<DashboardProps> = ({ context }) => {
                     <div className="relative z-10">
                         <div className="flex items-start justify-between">
                             <div>
-                                <h1 className="text-5xl font-black mb-3 bg-gradient-to-r from-white via-yellow-200 to-white bg-clip-text text-transparent animate-neon-pulse drop-shadow-lg">
+                                <h1 className="text-3xl md:text-5xl font-black mb-3 bg-gradient-to-r from-white via-yellow-200 to-white bg-clip-text text-transparent animate-neon-pulse drop-shadow-lg">
                                     🎓 Hey {studentProfile?.name}!
                                 </h1>
                                 <p className="text-white/95 text-xl mb-6 leading-relaxed">{getTutorTip()}</p>

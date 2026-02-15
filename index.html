@@ -624,6 +624,48 @@
       }
     }
 
+    /* Optimization for mobile devices */
+    @media (max-width: 768px) {
+
+      .animate-float,
+      .animate-wiggle,
+      .animate-rainbow-border,
+      .animate-neon-pulse,
+      .animate-glow-strong,
+      .animate-button-glow,
+      .animate-thinking-spin,
+      .animate-speaking-bounce {
+        will-change: transform, opacity;
+      }
+
+      /* Reduce shadow intensity on mobile for performance */
+      @keyframes button-glow-vibrant {
+
+        0%,
+        100% {
+          box-shadow: 0 0 5px 2px color-mix(in srgb, var(--color-primary) 60%, transparent);
+          transform: scale(1);
+        }
+
+        50% {
+          box-shadow: 0 0 10px 5px color-mix(in srgb, var(--color-primary) 80%, transparent);
+          transform: scale(1.02);
+        }
+      }
+
+      @keyframes neon-pulse {
+
+        0%,
+        100% {
+          text-shadow: 0 0 5px var(--color-primary);
+        }
+
+        50% {
+          text-shadow: 0 0 15px var(--color-primary);
+        }
+      }
+    }
+
     /* --- Flashcard Animation --- */
     .flashcard-container {
       perspective: 1000px;
