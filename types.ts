@@ -31,6 +31,7 @@ export enum AppState {
   BOOK_QUIZ,
   FLASHCARDS,
   POINT_SHOP,
+  PATTERN_DETECTIVE,
 }
 
 export enum AvatarState {

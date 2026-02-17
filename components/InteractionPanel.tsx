@@ -29,6 +29,7 @@ import PodcastifyView from './PodcastifyView';
 import BookQuizView from './BookQuizView';
 import FlashcardsView from './FlashcardsView';
 import PointShopView from './PointShopView';
+import PatternDetectiveView from './PatternDetectiveView';
 
 
 interface InteractionPanelProps {
@@ -93,6 +94,8 @@ const InteractionPanel: React.FC<InteractionPanelProps> = ({ context }) => {
         return <FlashcardsView context={context} />;
       case AppState.POINT_SHOP:
         return <PointShopView context={context} />;
+      case AppState.PATTERN_DETECTIVE:
+        return <PatternDetectiveView context={context} />;
       default:
         return <Dashboard context={context} />;
     }

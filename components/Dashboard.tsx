@@ -287,6 +287,14 @@ const Dashboard: React.FC<DashboardProps> = ({ context }) => {
                         onClick={() => setAppState(AppState.POINT_SHOP)}
                         onHover={playHoverSound}
                     />
+                    <ActionCard3D
+                        icon={<span className="text-4xl">🕵️‍♂️</span>}
+                        label="Patterns"
+                        emoji="🔍"
+                        gradient="from-cyan-700 to-blue-900"
+                        onClick={() => setAppState(AppState.PATTERN_DETECTIVE)}
+                        onHover={playHoverSound}
+                    />
                 </div>
             </div>
 

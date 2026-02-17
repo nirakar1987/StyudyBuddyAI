@@ -972,3 +972,61 @@ export async function generatePodcastScript(
   }
 }
 
+export interface PatternGame {
+  sequence: string[];
+  missingIndex: number;
+  options: string[];
+  correctAnswer: string;
+  explanation: string;
+  difficulty: 'Easy' | 'Medium' | 'Hard';
+}
+
+export async function generatePatternGame(
+  grade: number,
+  topic: string
+): Promise<PatternGame> {
+  const ai = getAiClient();
+  const prompt = `Create a "Find the Pattern" logic game for Grade ${grade} Math.
+    Topic: ${topic} (e.g., Arithmetic Sequences, Geometric Progressions, Fibonacci, Prime Numbers, Square Numbers).
+    
+    1. specific math sequence with ONE missing number represented by "?".
+    2. Provide 4 options.
+    3. Explain the logic clearly.
+    
+    Return JSON:
+    {
+        "sequence": ["2", "4", "8", "?", "32"],
+        "missingIndex": 3,
+        "options": ["12", "16", "24", "10"],
+        "correctAnswer": "16",
+        "explanation": "Multiply previous number by 2.",
+        "difficulty": "Medium"
+    }`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: [{ parts: [{ text: prompt }] }],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            sequence: { type: Type.ARRAY, items: { type: Type.STRING } },
+            missingIndex: { type: Type.NUMBER },
+            options: { type: Type.ARRAY, items: { type: Type.STRING } },
+            correctAnswer: { type: Type.STRING },
+            explanation: { type: Type.STRING },
+            difficulty: { type: Type.STRING, enum: ["Easy", "Medium", "Hard"] }
+          },
+          required: ["sequence", "missingIndex", "options", "correctAnswer", "explanation", "difficulty"]
+        }
+      }
+    });
+
+    return JSON.parse(response.text.trim());
+  } catch (error) {
+    throw new Error(handleApiError(error));
+  }
+}
+
