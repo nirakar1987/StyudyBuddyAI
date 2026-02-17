@@ -15,6 +15,7 @@ import { DocumentTextIcon } from './icons/DocumentTextIcon';
 import { GlobeAltIcon } from './icons/GlobeAltIcon';
 import { MicrophoneIcon } from './icons/MicrophoneIcon';
 import { SparklesIcon } from './icons/SparklesIcon';
+import { ShoppingBagIcon } from './icons/ShoppingBagIcon';
 import { useSoundEffects } from '../hooks/useSoundEffects';
 import TopicPerformanceChart from './TopicPerformanceChart';
 import { getQuizHistory } from '../services/databaseService';
@@ -276,6 +277,14 @@ const Dashboard: React.FC<DashboardProps> = ({ context }) => {
                         emoji="🕰️"
                         gradient="from-fuchsia-600 to-purple-800"
                         onClick={() => setAppState(AppState.TIME_TRAVEL)}
+                        onHover={playHoverSound}
+                    />
+                    <ActionCard3D
+                        icon={<ShoppingBagIcon className="w-10 h-10" />}
+                        label="Store"
+                        emoji="🛍️"
+                        gradient="from-yellow-500 to-amber-600"
+                        onClick={() => setAppState(AppState.POINT_SHOP)}
                         onHover={playHoverSound}
                     />
                 </div>

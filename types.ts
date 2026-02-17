@@ -30,6 +30,7 @@ export enum AppState {
   MATH_MASTERY,
   BOOK_QUIZ,
   FLASHCARDS,
+  POINT_SHOP,
 }
 
 export enum AvatarState {
