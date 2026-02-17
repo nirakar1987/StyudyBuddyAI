@@ -174,6 +174,14 @@ const Dashboard: React.FC<DashboardProps> = ({ context }) => {
                         onHover={playHoverSound}
                     />
                     <ActionCard3D
+                        icon={<SparklesIcon className="w-10 h-10" />}
+                        label="AI Flashcards"
+                        emoji="✨"
+                        gradient="from-pink-600 to-rose-500"
+                        onClick={() => setAppState(AppState.FLASHCARDS)}
+                        onHover={playHoverSound}
+                    />
+                    <ActionCard3D
                         icon={<UploadIcon className="w-10 h-10" />}
                         label="Quiz"
                         emoji="📝"

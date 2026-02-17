@@ -29,6 +29,7 @@ export enum AppState {
   MULTIPLAYER_CHALLENGE,
   MATH_MASTERY,
   BOOK_QUIZ,
+  FLASHCARDS,
 }
 
 export enum AvatarState {

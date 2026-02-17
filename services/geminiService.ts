@@ -799,20 +799,19 @@ export async function generateChapterQA(
   chapterName: string
 ): Promise<{ chapterName: string; questions: ChapterQAItem[] }> {
   const ai = getAiClient();
-  const prompt = `Generate a Chapter Wise Q/A revision set for:
-  Subject: ${profile.subject}, Grade: ${profile.grade}, Chapter: "${chapterName}".
-
-  Create a list of 10 important questions suitable for exam practice.
+  const prompt = `Generate a comprehensive Question & Answer set for the chapter: "${chapterName}".
+  Grade: ${profile.grade}, Subject: ${profile.subject}.
+  
   Include:
-  - 3 Very Short Answer (VSA) questions (1 mark)
-  - 4 Short Answer (SA) questions (3 marks)
-  - 3 Long Answer (LA) questions (5 marks)
-
-  Return strictly valid JSON:
+  1. 5 Very Short Answer (VSA) questions (1 mark).
+  2. 5 Short Answer (SA) questions (3 marks).
+  3. 2 Long Answer (LA) questions (5 marks).
+  
+  Return JSON:
   {
-      "chapterName": "Correct Chapter Title",
+      "chapterName": "${chapterName}",
       "questions": [
-          { "question": "...", "answer": "Concise model answer...", "type": "VSA", "marks": 1 }
+          { "question": "...", "answer": "...", "type": "VSA", "marks": 1 }
       ]
   }`;
 
@@ -833,7 +832,7 @@ export async function generateChapterQA(
                 properties: {
                   question: { type: Type.STRING },
                   answer: { type: Type.STRING },
-                  type: { type: Type.STRING, enum: ['VSA', 'SA', 'LA'] },
+                  type: { type: Type.STRING, enum: ["VSA", "SA", "LA"] },
                   marks: { type: Type.NUMBER }
                 },
                 required: ["question", "answer", "type", "marks"]
@@ -850,6 +849,57 @@ export async function generateChapterQA(
     throw new Error(handleApiError(error));
   }
 }
+
+export interface Flashcard {
+  front: string;
+  back: string;
+  category: string;
+}
+
+export async function generateFlashcards(
+  topic: string,
+  profile: Pick<StudentProfile, 'grade' | 'subject'>
+): Promise<Flashcard[]> {
+  const ai = getAiClient();
+  const prompt = `Create 10 study flashcards for the topic: "${topic}".
+    Target: Grade ${profile.grade} ${profile.subject} student.
+    
+    The cards should cover key definitions, formulas, important dates, or core concepts.
+    "Front" should be the term, question, or concept.
+    "Back" should be the clear, concise definition, answer, or explanation.
+    
+    Return JSON array of objects:
+    [
+        { "front": "Photosynthesis", "back": "The process by which plants make food using sunlight.", "category": "Definition" }
+    ]`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: [{ parts: [{ text: prompt }] }],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              front: { type: Type.STRING },
+              back: { type: Type.STRING },
+              category: { type: Type.STRING }
+            },
+            required: ["front", "back", "category"]
+          }
+        }
+      }
+    });
+
+    return JSON.parse(response.text.trim());
+  } catch (error) {
+    throw new Error(handleApiError(error));
+  }
+}
+
 
 export interface PodcastSegment {
   speaker: 'Host' | 'Expert';

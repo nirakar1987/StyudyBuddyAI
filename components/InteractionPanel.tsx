@@ -27,6 +27,7 @@ import MathMasteryView from './MathMasteryView';
 import TimeTravelView from './TimeTravelView';
 import PodcastifyView from './PodcastifyView';
 import BookQuizView from './BookQuizView';
+import FlashcardsView from './FlashcardsView';
 
 
 interface InteractionPanelProps {
@@ -87,6 +88,8 @@ const InteractionPanel: React.FC<InteractionPanelProps> = ({ context }) => {
         return <PodcastifyView context={context} />;
       case AppState.BOOK_QUIZ:
         return <BookQuizView context={context} />;
+      case AppState.FLASHCARDS:
+        return <FlashcardsView context={context} />;
       default:
         return <Dashboard context={context} />;
     }
