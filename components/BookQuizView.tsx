@@ -16,6 +16,7 @@ const BookQuizView: React.FC<BookQuizViewProps> = ({ context }) => {
     const [isGenerating, setIsGenerating] = useState(false);
     const [selectedChapter, setSelectedChapter] = useState<string | null>(null);
     const [selectedFilterSubject, setSelectedFilterSubject] = useState<string>(studentProfile?.subject || 'Science');
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
 
     // Sync selected subject with profile subject changes
     useEffect(() => {
@@ -27,14 +28,18 @@ const BookQuizView: React.FC<BookQuizViewProps> = ({ context }) => {
     const filteredModules = useMemo(() => {
         const allModules = learningModules || [];
         const currentSubject = selectedFilterSubject.toLowerCase().trim();
-        const studentGrade = studentProfile?.grade;
+        const studentGrade = Number(studentProfile?.grade);
 
         if (!currentSubject) return [];
 
         return allModules.filter(m => {
             // Filter by Grade if mapped
-            if (m.grades && studentGrade && !m.grades.includes(studentGrade)) {
-                return false;
+            if (m.grades && studentGrade) {
+                // Ensure strict number comparison
+                const grades = m.grades.map(Number);
+                if (!grades.includes(studentGrade)) {
+                    return false;
+                }
             }
 
             const moduleSub = (m.subject || "").toLowerCase().trim();
@@ -51,6 +56,43 @@ const BookQuizView: React.FC<BookQuizViewProps> = ({ context }) => {
                 currentSubject.includes(moduleSub);
         });
     }, [learningModules, selectedFilterSubject, studentProfile?.grade]);
+
+    const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const files = event.target.files;
+        if (!files || files.length === 0 || !studentProfile) return;
+
+        const file = files[0];
+        setIsGenerating(true);
+        setSelectedChapter(`Uploaded: ${file.name}`);
+        setAvatarState(AvatarState.THINKING);
+
+        try {
+            const quiz = await analyzeAndGenerateQuestions(
+                [file],
+                studentProfile,
+                {
+                    numQuestions: 10,
+                    difficulty: 'Medium',
+                    numOptions: 4,
+                    questionType: 'Multiple Choice'
+                },
+                `Analyze this uploaded chapter content. Subject: ${selectedFilterSubject}. Generate a quiz based strictly on this content.`
+            );
+
+            setGeneratedQuiz(quiz);
+            setLastUploadedFiles([file]);
+            setQuizSource({ type: 'upload', data: file.name });
+            setAppState(AppState.QUIZ);
+        } catch (error) {
+            console.error("Failed to generate quiz from upload:", error);
+            alert("Failed to process the uploaded file. Please try again.");
+        } finally {
+            setIsGenerating(false);
+            setSelectedChapter(null);
+            setAvatarState(AvatarState.IDLE);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+    };
 
 
 
@@ -98,15 +140,33 @@ const BookQuizView: React.FC<BookQuizViewProps> = ({ context }) => {
                     </div>
                     <div>
                         <h2 className="text-3xl font-black text-white tracking-tight">School Book Quiz</h2>
-                        <p className="text-slate-400 text-sm font-medium">Test your knowledge on specific textbook chapters.</p>
+                        <p className="text-slate-400 text-sm font-medium">Test your knowledge on textbook chapters.</p>
                     </div>
                 </div>
-                <button
-                    onClick={() => setAppState(AppState.DASHBOARD)}
-                    className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-slate-400 hover:text-white transition-all font-bold text-xs uppercase tracking-widest border border-white/5"
-                >
-                    <ArrowLeftOnRectangleIcon className="w-4 h-4" /> Back
-                </button>
+                <div className="flex items-center gap-3">
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileUpload}
+                        className="hidden"
+                        accept="image/*,.pdf,.doc,.docx,.txt"
+                    />
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 rounded-xl text-white font-bold text-xs uppercase tracking-widest shadow-lg shadow-emerald-500/20 transition-all hover:scale-105"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.414-1.414A1 1 0 0011.586 3H8.414a1 1 0 00-.707.293L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+                        </svg>
+                        Upload / Photo
+                    </button>
+                    <button
+                        onClick={() => setAppState(AppState.DASHBOARD)}
+                        className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-slate-400 hover:text-white transition-all font-bold text-xs uppercase tracking-widest border border-white/5"
+                    >
+                        <ArrowLeftOnRectangleIcon className="w-4 h-4" /> Back
+                    </button>
+                </div>
             </div>
 
 
