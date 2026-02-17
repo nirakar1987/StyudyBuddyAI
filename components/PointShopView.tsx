@@ -18,8 +18,10 @@ interface ShopItem {
 }
 
 const PointShopView: React.FC<PointShopViewProps> = ({ context }) => {
-    const { setAppState, studentProfile, setScore } = context;
-    const [purchasedItems, setPurchasedItems] = useState<string[]>([]); // This would ideally be persisted
+    const { setAppState, studentProfile, setStudentProfile, setScore } = context;
+    // Fallback to empty array if undefined
+    const purchasedItems = studentProfile?.purchased_items || [];
+    const activeItems = studentProfile?.active_items || [];
     const [activeTab, setActiveTab] = useState<'All' | 'Avatar' | 'Background' | 'Effect'>('All');
 
     const shopItems: ShopItem[] = [
@@ -34,20 +36,46 @@ const PointShopView: React.FC<PointShopViewProps> = ({ context }) => {
     ];
 
     const handleBuy = async (item: ShopItem) => {
-        if (!studentProfile?.score || studentProfile.score < item.price) {
-            alert("Not enough points! Keep studying!");
+        if (!studentProfile) return;
+
+        if (purchasedItems.includes(item.id)) {
+            // Toggle Equip/Unequip if already owned
+            const isActive = activeItems.includes(item.id);
+            let newActiveItems = [...activeItems];
+
+            if (isActive) {
+                newActiveItems = newActiveItems.filter(id => id !== item.id);
+            } else {
+                // If it's a background, unequip other backgrounds first (optional rule)
+                if (item.category === 'Background') {
+                    newActiveItems = newActiveItems.filter(id => !shopItems.find(s => s.id === id && s.category === 'Background'));
+                }
+                newActiveItems.push(item.id);
+            }
+
+            await setStudentProfile(prev => prev ? { ...prev, active_items: newActiveItems } : null);
             return;
         }
 
-        if (purchasedItems.includes(item.id)) {
-            alert("You already own this item!");
+        if ((studentProfile.score || 0) < item.price) {
+            alert("Not enough points! Keep studying!");
             return;
         }
 
         const confirmBuy = window.confirm(`Buy ${item.name} for ${item.price} points?`);
         if (confirmBuy) {
             await setScore((prev) => prev - item.price);
-            setPurchasedItems((prev) => [...prev, item.id]);
+
+            // Add to purchased items and auto-equip
+            const newPurchased = [...purchasedItems, item.id];
+            const newActive = [...activeItems, item.id];
+
+            await setStudentProfile(prev => prev ? {
+                ...prev,
+                purchased_items: newPurchased,
+                active_items: newActive
+            } : null);
+
             alert(`Purchase successful! You are now the owner of ${item.name}.`);
         }
     };
@@ -91,8 +119,8 @@ const PointShopView: React.FC<PointShopViewProps> = ({ context }) => {
                         key={tab}
                         onClick={() => setActiveTab(tab as any)}
                         className={`px-6 py-2 rounded-full font-bold text-sm transition-all ${activeTab === tab
-                                ? 'bg-yellow-500 text-white shadow-lg shadow-yellow-500/20'
-                                : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
+                            ? 'bg-yellow-500 text-white shadow-lg shadow-yellow-500/20'
+                            : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
                             }`}
                     >
                         {tab}
@@ -128,16 +156,18 @@ const PointShopView: React.FC<PointShopViewProps> = ({ context }) => {
 
                             <button
                                 onClick={() => handleBuy(item)}
-                                disabled={isOwned || !canAfford}
+                                disabled={!isOwned && !canAfford}
                                 className={`w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${isOwned
-                                        ? 'bg-green-500/20 text-green-400 cursor-default'
+                                        ? (activeItems.includes(item.id)
+                                            ? 'bg-green-500 text-slate-900 hover:bg-green-400 shadow-lg shadow-green-500/20'
+                                            : 'bg-slate-700 text-slate-300 hover:bg-slate-600')
                                         : canAfford
                                             ? 'bg-yellow-500 hover:bg-yellow-400 text-slate-900 shadow-lg shadow-yellow-500/20'
                                             : 'bg-slate-700 text-slate-500 cursor-not-allowed'
                                     }`}
                             >
                                 {isOwned ? (
-                                    <>✓ Owned</>
+                                    activeItems.includes(item.id) ? '✓ Equipped' : 'Equip'
                                 ) : (
                                     <>
                                         {item.price} <span className="text-xs opacity-70">PTS</span>

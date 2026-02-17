@@ -52,6 +52,8 @@ export interface StudentProfile {
   theme?: string;
   avatar_style?: string;
   avatar_url?: string;
+  purchased_items?: string[];
+  active_items?: string[];
 }
 
 export enum QuestionType {

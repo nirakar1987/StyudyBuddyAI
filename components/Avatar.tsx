@@ -76,7 +76,7 @@ const Avatar: React.FC<AvatarProps> = ({ avatarState, studentProfile, onProfileC
   return (
     <div className="p-4 bg-[var(--color-surface)] rounded-lg shadow-lg flex flex-col items-center">
       <div
-        className={`relative w-48 h-48 rounded-full overflow-hidden border-4 transition-all duration-500 group ${currentStyle.borderColor} ${currentStyle.animation}`}
+        className={`relative w-48 h-48 rounded-full overflow-visible border-4 transition-all duration-500 group ${currentStyle.borderColor} ${currentStyle.animation}`}
       >
         <input
           type="file"
@@ -85,16 +85,55 @@ const Avatar: React.FC<AvatarProps> = ({ avatarState, studentProfile, onProfileC
           accept="image/*"
           className="hidden"
         />
+
+        {/* Background Layer */}
+        {studentProfile?.active_items?.includes('bg_space') && (
+          <div className="absolute inset-[-20%] z-0 bg-[url('https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8c3RhcnJ5JTIwc2t5fGVufDB8fDB8fHww')] bg-cover rounded-full opacity-50 animate-pulse"></div>
+        )}
+        {studentProfile?.active_items?.includes('bg_forest') && (
+          <div className="absolute inset-[-20%] z-0 bg-[url('https://images.unsplash.com/photo-1448375240586-dfd8f3793306?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Zm9yZXN0fGVufDB8fDB8fHww')] bg-cover rounded-full opacity-50"></div>
+        )}
+
+        {/* Avatar Image */}
         <img
           src={avatarImageUrl}
           alt="StudyBuddy AI Tutor"
-          className={`w-full h-full object-cover transition-all duration-500`}
+          className={`w-full h-full object-cover rounded-full transition-all duration-500 relative z-10`}
           style={combinedFilter ? { filter: combinedFilter } : {}}
         />
-        <div className={`absolute inset-0 bg-black transition-opacity duration-500 ${currentStyle.overlayOpacity}`}></div>
+
+        {/* Accessories Layer */}
+        {studentProfile?.active_items?.includes('hat_cool') && (
+          <div className="absolute -top-12 left-0 w-full text-center text-6xl z-20 drop-shadow-lg transform -rotate-12">🧢</div>
+        )}
+        {studentProfile?.active_items?.includes('glasses_smart') && (
+          <div className="absolute top-12 left-0 w-full text-center text-6xl z-20 drop-shadow-lg">👓</div>
+        )}
+        {studentProfile?.active_items?.includes('crown_gold') && (
+          <div className="absolute -top-16 left-0 w-full text-center text-7xl z-20 drop-shadow-xl animate-bounce">👑</div>
+        )}
+        {studentProfile?.active_items?.includes('hat_wizard') && (
+          <div className="absolute -top-20 left-0 w-full text-center text-7xl z-20 drop-shadow-xl transform -rotate-6">🧙‍♂️</div>
+        )}
+
+        {/* Pets Layer */}
+        {studentProfile?.active_items?.includes('pet_robot') && (
+          <div className="absolute -bottom-2 -right-12 text-5xl z-30 animate-bounce" style={{ animationDuration: '2s' }}>🤖</div>
+        )}
+
+        {/* Effects Layer */}
+        {studentProfile?.active_items?.includes('effect_sparkle') && (
+          <div className="absolute inset-0 z-30 pointer-events-none">
+            <div className="absolute top-0 right-0 text-2xl animate-ping">✨</div>
+            <div className="absolute bottom-10 left-2 text-xl animate-ping" style={{ animationDelay: '0.5s' }}>✨</div>
+            <div className="absolute top-1/2 left-0 text-3xl animate-pulse">✨</div>
+          </div>
+        )}
+
+        <div className={`absolute inset-0 bg-black rounded-full transition-opacity duration-500 z-10 pointer-events-none ${currentStyle.overlayOpacity}`}></div>
         <button
           onClick={handleEditClick}
-          className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+          className="absolute inset-0 bg-black/50 rounded-full flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-40"
           aria-label="Change avatar image"
         >
           <PencilIcon className="w-8 h-8" />
