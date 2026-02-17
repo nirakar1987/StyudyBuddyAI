@@ -112,15 +112,15 @@ const App: React.FC = () => {
       const presences = presenceChannel.presenceState();
       const users = Object.keys(presences).map(key => {
         const presence = (presences[key] as any[])?.[0];
-        const userPayload: { id: string; name: any; avatar_url?: string } = {
+        if (!presence) return null;
+
+        return {
           id: key,
-          name: presence?.name,
-        };
-        if (presence?.avatar_url) {
-          userPayload.avatar_url = presence.avatar_url;
-        }
-        return userPayload;
+          name: presence.name,
+          avatar_url: presence.avatar_url
+        } as OnlineUser;
       }).filter((u): u is OnlineUser => !!u.name);
+
       setOnlineUsers(users);
     };
 
@@ -130,17 +130,21 @@ const App: React.FC = () => {
 
     presenceChannel.subscribe(async (status) => {
       if (status === 'SUBSCRIBED') {
-        await presenceChannel.track({
+        const trackStatus = await presenceChannel.track({
           name: studentProfile.name,
           avatar_url: studentProfile.avatar_url,
+          last_active: new Date().toISOString(),
         });
+        if (trackStatus !== 'ok') {
+          console.error("Presence tracking failed");
+        }
       }
     });
 
     return () => {
       supabase.removeChannel(presenceChannel);
     };
-  }, [user, studentProfile]);
+  }, [user?.id, studentProfile?.name, studentProfile?.avatar_url]);
 
 
   useEffect(() => {

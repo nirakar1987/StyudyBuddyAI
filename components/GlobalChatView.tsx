@@ -39,11 +39,11 @@ const GlobalChatView: React.FC<{ context: AppContextType }> = ({ context }) => {
     const [isLoadingHistory, setIsLoadingHistory] = useState(true);
     const channelRef = useRef<RealtimeChannel | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
-    
+
     // Create a map of online users for quick lookups to display real-time names.
     const onlineUsersMap = useMemo(() =>
         new Map(onlineUsers.map(u => [u.id, u])),
-    [onlineUsers]);
+        [onlineUsers]);
 
     const isDM = !!chatPartner;
 
@@ -52,7 +52,7 @@ const GlobalChatView: React.FC<{ context: AppContextType }> = ({ context }) => {
     };
 
     useEffect(scrollToBottom, [messages]);
-    
+
     // Memoize channelId to keep it stable across re-renders
     const channelId = useMemo(() => {
         if (!user) return '';
@@ -71,10 +71,10 @@ const GlobalChatView: React.FC<{ context: AppContextType }> = ({ context }) => {
             supabase.removeChannel(channelRef.current);
             channelRef.current = null;
         }
-        
+
         setIsLoadingHistory(true);
         setError(null);
-        
+
         try {
             const historyRows = await getMessages(channelId);
             setMessages(historyRows.map(dbRowToChatMessage));
@@ -93,14 +93,14 @@ const GlobalChatView: React.FC<{ context: AppContextType }> = ({ context }) => {
         };
 
         const channel = supabase.channel(`realtime-chat:${channelId}`);
-        
+
         channel.on('postgres_changes', {
             event: 'INSERT',
             schema: 'public',
             table: 'chat_messages',
             filter: `channel_id=eq.${channelId}`
         }, handleNewMessage);
-        
+
         channel.subscribe((status, err) => {
             if (status === 'SUBSCRIBED') {
                 console.log(`Successfully subscribed to channel: ${channelId}`);
@@ -111,10 +111,10 @@ const GlobalChatView: React.FC<{ context: AppContextType }> = ({ context }) => {
                 setError('Connection to chat lost. Please try again.');
             }
         });
-        
+
         channelRef.current = channel;
 
-    }, [channelId, user, studentProfile]);
+    }, [channelId, user?.id]);
 
     useEffect(() => {
         setupChat();
@@ -130,7 +130,7 @@ const GlobalChatView: React.FC<{ context: AppContextType }> = ({ context }) => {
         e.preventDefault();
         const content = messageInput.trim();
         if (content && user && studentProfile && channelId) {
-            
+
             const messagePayload: ChatMessageInsert = {
                 channel_id: channelId,
                 sender_id: user.id,
@@ -140,10 +140,10 @@ const GlobalChatView: React.FC<{ context: AppContextType }> = ({ context }) => {
                     avatar_url: studentProfile.avatar_url,
                 },
             };
-            
+
             const tempInput = messageInput;
             setMessageInput('');
-            
+
             try {
                 await insertMessage(messagePayload);
             } catch (err) {
@@ -152,7 +152,7 @@ const GlobalChatView: React.FC<{ context: AppContextType }> = ({ context }) => {
             }
         }
     };
-    
+
     return (
         <div className={`flex flex-col md:flex-row h-full max-h-[75vh] animate-fade-in ${isDM ? '' : 'gap-4'}`}>
             {!isDM && (
@@ -163,7 +163,7 @@ const GlobalChatView: React.FC<{ context: AppContextType }> = ({ context }) => {
                     <div className="flex-grow overflow-y-auto pr-2 space-y-3">
                         {onlineUsers.map(u => (
                             <div key={u.id} className="flex items-center gap-3">
-                                 <div className="relative flex-shrink-0">
+                                <div className="relative flex-shrink-0">
                                     <img src={u.avatar_url || 'https://190802f6-a580-4721-ba89-eb32a807b961.sandbox.lovable.dev/src/assets/ai-tutor-avatar.jpg'} alt={u.name} className="w-10 h-10 rounded-full object-cover bg-[var(--color-surface-lighter)]" />
                                     <span
                                         className="absolute bottom-0 right-0 block h-3 w-3 rounded-full border-2 border-[var(--color-surface-light)] bg-green-500"
@@ -178,7 +178,7 @@ const GlobalChatView: React.FC<{ context: AppContextType }> = ({ context }) => {
             )}
 
             <div className={`flex-grow flex flex-col rounded-lg ${isDM ? 'bg-transparent' : 'bg-[var(--color-surface-light)]/50'}`}>
-                 <h2 className="text-2xl font-bold text-[var(--color-primary)] p-4 border-b border-[var(--color-border)]">
+                <h2 className="text-2xl font-bold text-[var(--color-primary)] p-4 border-b border-[var(--color-border)]">
                     {isDM ? `Chat with ${chatPartner.name}` : 'Community Chat'}
                 </h2>
                 <div className="flex-grow p-4 overflow-y-auto space-y-4">
@@ -188,7 +188,7 @@ const GlobalChatView: React.FC<{ context: AppContextType }> = ({ context }) => {
                         </div>
                     )}
                     {!isLoadingHistory && error && (
-                         <div className="flex-grow flex items-center justify-center text-center h-full">
+                        <div className="flex-grow flex items-center justify-center text-center h-full">
                             <div>
                                 <p className="text-[var(--color-danger)]">{error}</p>
                                 <button onClick={setupChat} className="mt-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg font-semibold">
@@ -222,9 +222,9 @@ const GlobalChatView: React.FC<{ context: AppContextType }> = ({ context }) => {
                             </div>
                         );
                     })}
-                     <div ref={messagesEndRef} />
+                    <div ref={messagesEndRef} />
                 </div>
-                
+
                 <form onSubmit={handleSendMessage} className="p-4 border-t border-[var(--color-border)] flex items-center gap-2">
                     <input
                         type="text"
