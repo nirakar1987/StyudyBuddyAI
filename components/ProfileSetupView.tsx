@@ -20,6 +20,25 @@ const ProfileSetupView: React.FC<ProfileSetupViewProps> = ({ context }) => {
     const [name, setName] = useState(studentProfile?.name || '');
     const [grade, setGrade] = useState(studentProfile?.grade || 5);
     const [subject, setSubject] = useState(studentProfile?.subject || 'Science');
+    const [selectedAvatar, setSelectedAvatar] = useState(studentProfile?.avatar_url || '');
+
+    const defaultAvatars = [
+        `https://api.dicebear.com/9.x/micah/svg?seed=student1`,
+        `https://api.dicebear.com/9.x/micah/svg?seed=student2`,
+        `https://api.dicebear.com/9.x/micah/svg?seed=student3`,
+        `https://api.dicebear.com/9.x/micah/svg?seed=student4`,
+        `https://api.dicebear.com/9.x/micah/svg?seed=student5`,
+        `https://api.dicebear.com/9.x/micah/svg?seed=student6`,
+        `https://api.dicebear.com/9.x/micah/svg?seed=student7`,
+        `https://api.dicebear.com/9.x/micah/svg?seed=student8`,
+    ];
+
+    // Auto-select a default if none selected
+    React.useEffect(() => {
+        if (!selectedAvatar && name) {
+            setSelectedAvatar(`https://api.dicebear.com/9.x/micah/svg?seed=${encodeURIComponent(name.trim())}`);
+        }
+    }, [name, selectedAvatar]);
 
     const grades = Array.from({ length: 12 }, (_, i) => i + 1);
     const subjects = [
@@ -46,7 +65,7 @@ const ProfileSetupView: React.FC<ProfileSetupViewProps> = ({ context }) => {
             score: studentProfile?.score || 0,
             streak: studentProfile?.streak || 1,
             completed_modules: studentProfile?.completed_modules || [],
-            avatar_url: studentProfile?.avatar_url || `https://api.dicebear.com/9.x/micah/svg?seed=${encodeURIComponent(name.trim())}`,
+            avatar_url: selectedAvatar || `https://api.dicebear.com/9.x/micah/svg?seed=${encodeURIComponent(name.trim())}`,
             theme: studentProfile?.theme || 'midnight-bloom'
         };
 
@@ -95,6 +114,21 @@ const ProfileSetupView: React.FC<ProfileSetupViewProps> = ({ context }) => {
                                     className="relative w-full p-5 bg-slate-900/60 border border-white/10 rounded-2xl text-white text-xl placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all font-bold"
                                     required
                                 />
+                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            <label className="block text-sm font-black text-slate-300 ml-1 uppercase tracking-widest">Choose Your Avatar</label>
+                            <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
+                                {defaultAvatars.map((url, idx) => (
+                                    <button
+                                        key={idx}
+                                        onClick={() => setSelectedAvatar(url)}
+                                        className={`flex-shrink-0 w-16 h-16 rounded-full border-4 transition-all ${selectedAvatar === url ? 'border-cyan-400 scale-110 shadow-lg shadow-cyan-400/50' : 'border-slate-700 hover:border-slate-500 opacity-70 hover:opacity-100'}`}
+                                    >
+                                        <img src={url} alt={`Avatar ${idx + 1}`} className="w-full h-full rounded-full bg-slate-800" />
+                                    </button>
+                                ))}
                             </div>
                         </div>
 
