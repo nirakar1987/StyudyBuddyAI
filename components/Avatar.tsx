@@ -66,7 +66,7 @@ const Avatar: React.FC<AvatarProps> = ({ avatarState, studentProfile, onProfileC
 
 
   const currentStyle = stateStyles[avatarState] || stateStyles[AvatarState.IDLE];
-  const defaultAvatarUrl = "https://190802f6-a580-4721-ba89-eb32a807b961.sandbox.lovable.dev/src/assets/ai-tutor-avatar.jpg";
+  const defaultAvatarUrl = "https://api.dicebear.com/9.x/micah/svg?seed=student";
   const avatarImageUrl = studentProfile?.avatar_url || defaultAvatarUrl;
 
   const baseFilter = visualStyleFilters[studentProfile?.avatar_style || 'default'] || '';

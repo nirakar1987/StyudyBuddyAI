@@ -164,7 +164,7 @@ const GlobalChatView: React.FC<{ context: AppContextType }> = ({ context }) => {
                         {onlineUsers.map(u => (
                             <div key={u.id} className="flex items-center gap-3">
                                 <div className="relative flex-shrink-0">
-                                    <img src={u.avatar_url || 'https://190802f6-a580-4721-ba89-eb32a807b961.sandbox.lovable.dev/src/assets/ai-tutor-avatar.jpg'} alt={u.name} className="w-10 h-10 rounded-full object-cover bg-[var(--color-surface-lighter)]" />
+                                    <img src={u.avatar_url || 'https://api.dicebear.com/9.x/micah/svg?seed=student'} alt={u.name} className="w-10 h-10 rounded-full object-cover bg-[var(--color-surface-lighter)]" />
                                     <span
                                         className="absolute bottom-0 right-0 block h-3 w-3 rounded-full border-2 border-[var(--color-surface-light)] bg-green-500"
                                         title="Online"
@@ -209,7 +209,7 @@ const GlobalChatView: React.FC<{ context: AppContextType }> = ({ context }) => {
                         const sender = onlineUsersMap.get(msg.sender.id) || msg.sender;
                         return (
                             <div key={msg.id} className={`flex items-start gap-3 ${isMe ? 'flex-row-reverse' : ''}`}>
-                                <img src={sender.avatar_url || 'https://190802f6-a580-4721-ba89-eb32a807b961.sandbox.lovable.dev/src/assets/ai-tutor-avatar.jpg'} alt={sender.name} className="w-10 h-10 rounded-full object-cover bg-[var(--color-surface-lighter)]" />
+                                <img src={sender.avatar_url || 'https://api.dicebear.com/9.x/micah/svg?seed=student'} alt={sender.name} className="w-10 h-10 rounded-full object-cover bg-[var(--color-surface-lighter)]" />
                                 <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
                                     <div className={`p-3 rounded-lg max-w-md ${isMe ? 'bg-[var(--color-primary-action)] text-white rounded-br-none' : 'bg-[var(--color-surface-light)] text-[var(--color-text-primary)] rounded-bl-none'}`}>
                                         {!isMe && <p className="text-sm font-bold text-[var(--color-primary)] mb-1">{sender.name}</p>}

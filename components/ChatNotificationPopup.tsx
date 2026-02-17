@@ -30,7 +30,7 @@ const ChatNotificationPopup: React.FC<ChatNotificationPopupProps> = ({ sender, m
                     <div className="flex-shrink-0 relative">
                         <img
                             className="h-12 w-12 rounded-full object-cover"
-                            src={sender.avatar_url || 'https://190802f6-a580-4721-ba89-eb32a807b961.sandbox.lovable.dev/src/assets/ai-tutor-avatar.jpg'}
+                            src={sender.avatar_url || 'https://api.dicebear.com/9.x/micah/svg?seed=student'}
                             alt={`${sender.name}'s avatar`}
                         />
                         <span className="absolute -bottom-1 -right-1 bg-fuchsia-500 p-1 rounded-full border-2 border-[var(--color-surface)]">

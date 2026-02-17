@@ -46,6 +46,7 @@ const ProfileSetupView: React.FC<ProfileSetupViewProps> = ({ context }) => {
             score: studentProfile?.score || 0,
             streak: studentProfile?.streak || 1,
             completed_modules: studentProfile?.completed_modules || [],
+            avatar_url: studentProfile?.avatar_url || `https://api.dicebear.com/9.x/micah/svg?seed=${encodeURIComponent(name.trim())}`,
             theme: studentProfile?.theme || 'midnight-bloom'
         };
 

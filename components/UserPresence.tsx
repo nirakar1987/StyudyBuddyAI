@@ -12,7 +12,7 @@ interface UserPresenceProps {
 
 const UserPresence: React.FC<UserPresenceProps> = ({ user, onlineUsers, startGlobalChat }) => {
     const otherUsers = onlineUsers.filter(u => u.id !== user?.id);
-    
+
     return (
         <div className="p-4 bg-[var(--color-surface)] rounded-lg">
             <h2 className="text-xl font-bold text-[var(--color-primary)] mb-3 text-center flex items-center justify-center gap-2">
@@ -25,7 +25,7 @@ const UserPresence: React.FC<UserPresenceProps> = ({ user, onlineUsers, startGlo
                         <div key={onlineUser.id} className="flex items-center justify-between gap-3 animate-fade-in" style={{ animationDuration: '300ms' }}>
                             <div className="flex items-center gap-3 overflow-hidden">
                                 <div className="relative flex-shrink-0">
-                                    <img src={onlineUser.avatar_url || 'https://190802f6-a580-4721-ba89-eb32a807b961.sandbox.lovable.dev/src/assets/ai-tutor-avatar.jpg'} alt={onlineUser.name} className="w-10 h-10 rounded-full object-cover bg-[var(--color-surface-lighter)]" />
+                                    <img src={onlineUser.avatar_url || 'https://api.dicebear.com/9.x/micah/svg?seed=student'} alt={onlineUser.name} className="w-10 h-10 rounded-full object-cover bg-[var(--color-surface-lighter)]" />
                                     <span
                                         className="absolute bottom-0 right-0 block h-3 w-3 rounded-full border-2 border-[var(--color-surface)] bg-green-500 animate-online-pulse"
                                         title="Online"
@@ -35,8 +35,8 @@ const UserPresence: React.FC<UserPresenceProps> = ({ user, onlineUsers, startGlo
                                     {onlineUser.name}
                                 </span>
                             </div>
-                            <button 
-                                onClick={() => startGlobalChat(onlineUser)} 
+                            <button
+                                onClick={() => startGlobalChat(onlineUser)}
                                 className="p-2 rounded-full text-slate-400 hover:bg-slate-700 hover:text-white transition-colors flex-shrink-0"
                                 title={`Chat with ${onlineUser.name}`}
                             >
