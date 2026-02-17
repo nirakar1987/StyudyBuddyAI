@@ -503,6 +503,7 @@ export const LEARNING_MODULES: LearningModule[] = [
     subject: 'Computer',
     description: 'Evolution of computers from Abacus to modern PCs.',
     requiredTopics: ['Abacus', 'Generations', 'Charles Babbage'],
+    grades: [4],
   },
   {
     id: 'comp-book-02',
@@ -510,6 +511,7 @@ export const LEARNING_MODULES: LearningModule[] = [
     subject: 'Computer',
     description: 'Understanding Input, Output, and Processing devices.',
     requiredTopics: ['CPU', 'Keyboard', 'Monitor', 'Memory'],
+    grades: [4],
   },
   {
     id: 'comp-book-03',
@@ -517,6 +519,7 @@ export const LEARNING_MODULES: LearningModule[] = [
     subject: 'Computer',
     description: 'Exploring the Windows 10 operating system interface and features.',
     requiredTopics: ['Desktop', 'Taskbar', 'Start Menu', 'File Explorer'],
+    grades: [4],
   },
   {
     id: 'comp-book-04',
@@ -524,6 +527,7 @@ export const LEARNING_MODULES: LearningModule[] = [
     subject: 'Computer',
     description: 'Creating and formatting documents using MS Word.',
     requiredTopics: ['Editing', 'Formatting', 'Tabs', 'Ribbon'],
+    grades: [5],
   },
   {
     id: 'comp-book-05',
@@ -531,6 +535,7 @@ export const LEARNING_MODULES: LearningModule[] = [
     subject: 'Computer',
     description: 'Creating engaging presentations with slides.',
     requiredTopics: ['Slides', 'Transitions', 'Animations', 'Themes'],
+    grades: [5],
   },
   {
     id: 'comp-book-06',
@@ -538,6 +543,7 @@ export const LEARNING_MODULES: LearningModule[] = [
     subject: 'Computer',
     description: 'Advanced drawing and commands in MSW Logo.',
     requiredTopics: ['Turtle', 'Primitives', 'Procedures', 'Calculations'],
+    grades: [5],
   },
   {
     id: 'comp-book-07',
@@ -545,6 +551,7 @@ export const LEARNING_MODULES: LearningModule[] = [
     subject: 'Computer',
     description: 'Understanding the World Wide Web and online services.',
     requiredTopics: ['Web Browser', 'Search Engine', 'Email', 'Networking'],
+    grades: [6],
   },
   {
     id: 'comp-book-08',
@@ -552,6 +559,7 @@ export const LEARNING_MODULES: LearningModule[] = [
     subject: 'Computer',
     description: 'Introduction to coding with Python.',
     requiredTopics: ['Syntax', 'Variables', 'Data Types', 'Print Statement'],
+    grades: [6],
   },
   {
     id: 'comp-book-09',
@@ -559,6 +567,7 @@ export const LEARNING_MODULES: LearningModule[] = [
     subject: 'Computer',
     description: 'Basics of AI and its applications in the real world.',
     requiredTopics: ['Machine Learning', 'Robotics', 'Automation', 'Future Tech'],
+    grades: [6],
   },
   // Science Book Chapters (from User Request)
   {
@@ -567,6 +576,7 @@ export const LEARNING_MODULES: LearningModule[] = [
     subject: 'Science',
     description: 'Photosynthesis, structure of leaves, and food storage in plants.',
     requiredTopics: ['Photosynthesis', 'Leaves', 'Stomata', 'Chlorophyll'],
+    grades: [4],
   },
   {
     id: 'sci-book-02',
@@ -574,6 +584,7 @@ export const LEARNING_MODULES: LearningModule[] = [
     subject: 'Science',
     description: 'How plants adapt to aquatic and terrestrial habitats.',
     requiredTopics: ['Aquatic Plants', 'Terrestrial Plants', 'Survival'],
+    grades: [4],
   },
   {
     id: 'sci-book-03',
@@ -581,6 +592,7 @@ export const LEARNING_MODULES: LearningModule[] = [
     subject: 'Science',
     description: 'Animal adaptations for habitats, food, and protection.',
     requiredTopics: ['Camouflage', 'Hibernation', 'Migration', 'Habitats'],
+    grades: [4],
   },
   {
     id: 'sci-book-04',
@@ -588,6 +600,7 @@ export const LEARNING_MODULES: LearningModule[] = [
     subject: 'Science',
     description: 'Life cycles and reproduction methods (Oviparous vs Viviparous).',
     requiredTopics: ['Life Cycle', 'Reproduction', 'Mammals', 'Metamorphosis'],
+    grades: [4],
   },
   {
     id: 'sci-book-05',
@@ -595,6 +608,7 @@ export const LEARNING_MODULES: LearningModule[] = [
     subject: 'Science',
     description: 'How the body breathes and circulates blood.',
     requiredTopics: ['Lungs', 'Heart', 'Blood Vessels', 'Breathing'],
+    grades: [5],
   },
   {
     id: 'sci-book-06',
@@ -602,6 +616,7 @@ export const LEARNING_MODULES: LearningModule[] = [
     subject: 'Science',
     description: 'The process of digestion and importance of healthy eating.',
     requiredTopics: ['Stomach', 'Intestines', 'Digestion', 'Teeth'],
+    grades: [5],
   },
   {
     id: 'sci-book-07',
@@ -609,6 +624,7 @@ export const LEARNING_MODULES: LearningModule[] = [
     subject: 'Science',
     description: 'Components of food, balanced diet, and food preservation.',
     requiredTopics: ['Nutrients', 'Balanced Diet', 'Carbohydrates', 'Proteins'],
+    grades: [5],
   },
   {
     id: 'sci-book-08',
@@ -616,6 +632,7 @@ export const LEARNING_MODULES: LearningModule[] = [
     subject: 'Science',
     description: 'Why we wear clothes and different types of fibers.',
     requiredTopics: ['Fibers', 'Natural', 'Synthetic', 'Seasons'],
+    grades: [5],
   },
   {
     id: 'sci-book-09',
@@ -623,6 +640,7 @@ export const LEARNING_MODULES: LearningModule[] = [
     subject: 'Science',
     description: 'States of matter and their properties.',
     requiredTopics: ['Matter', 'Molecules', 'States', 'Change of State'],
+    grades: [6],
   },
   {
     id: 'sci-book-10',
@@ -630,6 +648,7 @@ export const LEARNING_MODULES: LearningModule[] = [
     subject: 'Science',
     description: 'Understanding types of forces, work done, and energy forms.',
     requiredTopics: ['Force', 'Gravity', 'Friction', 'Simple Machines'],
+    grades: [6],
   },
   {
     id: 'sci-book-11',
@@ -637,6 +656,7 @@ export const LEARNING_MODULES: LearningModule[] = [
     subject: 'Science',
     description: 'The water cycle, properties of air, and weather changes.',
     requiredTopics: ['Water Cycle', 'Evaporation', 'Condensation', 'Atmosphere'],
+    grades: [6],
   },
   {
     id: 'sci-book-12',
@@ -644,6 +664,7 @@ export const LEARNING_MODULES: LearningModule[] = [
     subject: 'Science',
     description: 'Planets, satellites, and the movements of the Earth.',
     requiredTopics: ['Planets', 'Orbit', 'Rotation', 'Revolution'],
+    grades: [6],
   },
   {
     id: 'sci-book-13',
@@ -651,6 +672,7 @@ export const LEARNING_MODULES: LearningModule[] = [
     subject: 'Science',
     description: 'Types of pollution and how to conserve our environment.',
     requiredTopics: ['Pollution', 'Conservation', 'Environment', 'Recycling'],
+    grades: [6],
   },
   // Hindi Book Chapters (from User Request)
   {

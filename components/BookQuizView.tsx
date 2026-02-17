@@ -27,10 +27,16 @@ const BookQuizView: React.FC<BookQuizViewProps> = ({ context }) => {
     const filteredModules = useMemo(() => {
         const allModules = learningModules || [];
         const currentSubject = selectedFilterSubject.toLowerCase().trim();
+        const studentGrade = studentProfile?.grade;
 
         if (!currentSubject) return [];
 
         return allModules.filter(m => {
+            // Filter by Grade if mapped
+            if (m.grades && studentGrade && !m.grades.includes(studentGrade)) {
+                return false;
+            }
+
             const moduleSub = (m.subject || "").toLowerCase().trim();
 
             // Normalize math/maths/mathematics
@@ -44,7 +50,7 @@ const BookQuizView: React.FC<BookQuizViewProps> = ({ context }) => {
                 moduleSub.includes(currentSubject) ||
                 currentSubject.includes(moduleSub);
         });
-    }, [learningModules, selectedFilterSubject]);
+    }, [learningModules, selectedFilterSubject, studentProfile?.grade]);
 
 
 

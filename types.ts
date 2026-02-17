@@ -101,6 +101,7 @@ export interface LearningModule {
   subject: string;
   description: string;
   requiredTopics: string[];
+  grades?: number[];
 }
 
 export interface PracticeProblem {
