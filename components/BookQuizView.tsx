@@ -12,7 +12,7 @@ interface BookQuizViewProps {
 }
 
 const BookQuizView: React.FC<BookQuizViewProps> = ({ context }) => {
-    const { setAppState, setAvatarState, studentProfile, learningModules, setGeneratedQuiz, setLastUploadedFiles, setQuizSource } = context;
+    const { setAppState, setAvatarState, studentProfile, learningModules, setGeneratedQuiz, setLastUploadedFiles, setQuizSource, addLearningModule } = context;
     const [isGenerating, setIsGenerating] = useState(false);
     const [selectedChapter, setSelectedChapter] = useState<string | null>(null);
     const [selectedFilterSubject, setSelectedFilterSubject] = useState<string>(studentProfile?.subject || 'Science');
@@ -33,6 +33,9 @@ const BookQuizView: React.FC<BookQuizViewProps> = ({ context }) => {
         if (!currentSubject) return [];
 
         return allModules.filter(m => {
+            // Include uploaded files for this subject if matches
+            if (m.file && m.subject.toLowerCase() === currentSubject) return true;
+
             // Filter by Grade if mapped
             if (m.grades && studentGrade) {
                 // Ensure strict number comparison
@@ -62,67 +65,69 @@ const BookQuizView: React.FC<BookQuizViewProps> = ({ context }) => {
         if (!files || files.length === 0 || !studentProfile) return;
 
         const file = files[0];
-        setIsGenerating(true);
-        setSelectedChapter(`Uploaded: ${file.name}`);
-        setAvatarState(AvatarState.THINKING);
 
-        try {
-            const quiz = await analyzeAndGenerateQuestions(
-                [file],
-                studentProfile,
-                {
-                    numQuestions: 10,
-                    difficulty: 'Medium',
-                    numOptions: 4,
-                    questionType: 'Multiple Choice'
-                },
-                `Analyze this uploaded chapter content. Subject: ${selectedFilterSubject}. Generate a quiz based strictly on this content.`
-            );
+        // Create a new module from the file
+        // This "saves" the syllabus as a selectable module
+        const newModule: any = {
+            id: `upload-${Date.now()}`,
+            title: file.name.replace(/\.[^/.]+$/, ""), // Remove extension
+            subject: selectedFilterSubject,
+            description: "Uploaded Syllabus/Chapter",
+            requiredTopics: [],
+            file: file
+        };
 
-            setGeneratedQuiz(quiz);
-            setLastUploadedFiles([file]);
-            setQuizSource({ type: 'upload', data: file.name });
-            setAppState(AppState.QUIZ);
-        } catch (error) {
-            console.error("Failed to generate quiz from upload:", error);
-            alert("Failed to process the uploaded file. Please try again.");
-        } finally {
-            setIsGenerating(false);
-            setSelectedChapter(null);
-            setAvatarState(AvatarState.IDLE);
-            if (fileInputRef.current) fileInputRef.current.value = '';
-        }
+        addLearningModule(newModule);
+
+        if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
-
-
-    const handleStartQuiz = async (chapterTitle: string) => {
+    const handleStartQuiz = async (module: any) => {
         if (!studentProfile) return;
 
         setIsGenerating(true);
-        setSelectedChapter(chapterTitle);
+        setSelectedChapter(module.title);
         setAvatarState(AvatarState.THINKING);
 
         try {
-            // Generate a quiz specifically for this book chapter
-            const quiz = await analyzeAndGenerateQuestions(
-                [], // No files, use topic instead
-                studentProfile,
-                {
-                    numQuestions: 10,
-                    difficulty: 'Medium',
-                    numOptions: 4,
-                    questionType: 'Multiple Choice'
-                },
-                `Textbook Chapter: ${chapterTitle}. Subject: ${selectedFilterSubject}. Randomize the position of the correct answer among options.`
-            );
+            let quiz;
+
+            if (module.file) {
+                // Generate quiz from uploaded file
+                quiz = await analyzeAndGenerateQuestions(
+                    [module.file],
+                    studentProfile,
+                    {
+                        numQuestions: 10,
+                        difficulty: 'Medium',
+                        numOptions: 4,
+                        questionType: 'Multiple Choice'
+                    },
+                    `Analyze this uploaded chapter content. Subject: ${selectedFilterSubject}. Generate a quiz based strictly on this content.`
+                );
+                setQuizSource({ type: 'upload', data: module.file.name });
+                setLastUploadedFiles([module.file]);
+            } else {
+                // Generate quiz from text book chapter topic
+                quiz = await analyzeAndGenerateQuestions(
+                    [], // No files, use topic instead
+                    studentProfile,
+                    {
+                        numQuestions: 10,
+                        difficulty: 'Medium',
+                        numOptions: 4,
+                        questionType: 'Multiple Choice'
+                    },
+                    `Textbook Chapter: ${module.title}. Subject: ${selectedFilterSubject}. Randomize the position of the correct answer among options.`
+                );
+                setQuizSource({ type: 'book', data: module.title });
+                setLastUploadedFiles([]);
+            }
 
             setGeneratedQuiz(quiz);
-            setQuizSource({ type: 'book', data: chapterTitle }); // Set source for regeneration
-            setLastUploadedFiles([]); // Clear last uploads since we're doing a book quiz
             setAppState(AppState.QUIZ);
         } catch (error) {
-            console.error("Failed to generate book quiz:", error);
+            console.error("Failed to generate quiz:", error);
             alert("Failed to generate quiz for this chapter. Please try again.");
         } finally {
             setIsGenerating(false);
@@ -199,7 +204,7 @@ const BookQuizView: React.FC<BookQuizViewProps> = ({ context }) => {
                                 <div
                                     key={module.id}
                                     className="group relative bg-slate-800/80 hover:bg-slate-700/80 rounded-3xl border border-white/10 hover:border-indigo-500/50 p-6 transition-all duration-300 hover:shadow-2xl hover:shadow-indigo-500/10 cursor-pointer flex flex-col h-full"
-                                    onClick={() => handleStartQuiz(module.title)}
+                                    onClick={() => handleStartQuiz(module)}
                                 >
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="w-10 h-10 bg-indigo-500/10 rounded-xl flex items-center justify-center group-hover:bg-indigo-500 transition-colors">

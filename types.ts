@@ -107,6 +107,7 @@ export interface LearningModule {
   description: string;
   requiredTopics: string[];
   grades?: number[];
+  file?: File;
 }
 
 export interface PracticeProblem {
@@ -200,4 +201,5 @@ export interface AppContextType {
   handleSubmitQuiz: () => void;
   regenerateQuiz: () => void;
   logout: () => Promise<void>;
+  addLearningModule: (module: LearningModule) => void;
 }

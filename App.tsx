@@ -48,7 +48,7 @@ const App: React.FC = () => {
   const [quizResults, setQuizResults] = useState<boolean[] | null>(null);
   const [lastUploadedFiles, setLastUploadedFiles] = useState<File[]>([]);
   const [quizCustomization, setQuizCustomization] = useState({ numQuestions: 5, difficulty: 'Medium', duration: 10, numOptions: 4 });
-  const [learningModules] = useState<LearningModule[]>(LEARNING_MODULES);
+  const [learningModules, setLearningModules] = useState<LearningModule[]>(LEARNING_MODULES);
   const [completedModules, setCompletedModules] = useState<string[]>([]);
   const [lastModuleCompleted, setLastModuleCompleted] = useState<string | null>(null);
   const [practiceProblem, setPracticeProblem] = useState<PracticeProblem | null>(null);
@@ -445,11 +445,19 @@ const App: React.FC = () => {
 
   const handleLogout = useCallback(async () => { await supabase!.auth.signOut(); }, []);
 
+  const addLearningModule = useCallback((module: LearningModule) => {
+    setLearningModules(prev => {
+      // Avoid duplicates
+      if (prev.some(m => m.id === module.id)) return prev;
+      return [...prev, module];
+    });
+  }, []);
+
   const contextValue = useMemo(() => ({
     appState, studentProfile, generatedQuiz, quizSource, avatarState, chatHistory, score, streak, progressReport, userAnswers, quizScore, quizResults, lastUploadedFiles, quizCustomization, learningModules, completedModules, lastModuleCompleted, practiceProblem, userPracticeAnswer, problemFeedback, user, quizHistory, selectedQuizAttempt, theme, isSubmitting, submissionError, onlineUsers, chatPartner,
     setAppState: handleStateChange, setStudentProfile: updateStudentProfile, setGeneratedQuiz, setQuizSource, setAvatarState, setChatHistory, setScore: updateScore, setStreak, setProgressReport, setUserAnswers, setQuizScore, setQuizResults, setLastUploadedFiles, setQuizCustomization, setPracticeProblem, setUserPracticeAnswer, setProblemFeedback, setQuizHistory, setSelectedQuizAttempt, setTheme: handleThemeChange, setIsSubmitting, setSubmissionError,
-    startApp: handleStartApp, startLesson: handleStartLesson, startPracticeSession: handleStartPracticeSession, startSolveIssue: handleStartSolveIssue, startVideoGeneration: handleStartVideoGeneration, startGlobalChat: handleStartGlobalChat, onQuestionsGenerated: handleQuestionsGenerated, generateReport: handleGenerateReport, handleSubmitQuiz: handleSubmitQuiz, regenerateQuiz: handleRegenerateQuiz, logout: handleLogout,
-  }), [appState, studentProfile, generatedQuiz, quizSource, avatarState, chatHistory, score, streak, progressReport, userAnswers, quizScore, quizResults, lastUploadedFiles, quizCustomization, learningModules, completedModules, lastModuleCompleted, practiceProblem, userPracticeAnswer, problemFeedback, user, quizHistory, selectedQuizAttempt, theme, isSubmitting, submissionError, onlineUsers, chatPartner, handleStateChange, updateStudentProfile, updateScore, handleThemeChange, handleStartApp, handleStartLesson, handleStartPracticeSession, handleStartSolveIssue, handleStartVideoGeneration, handleStartGlobalChat, handleQuestionsGenerated, handleGenerateReport, handleSubmitQuiz, handleRegenerateQuiz, handleLogout]);
+    startApp: handleStartApp, startLesson: handleStartLesson, startPracticeSession: handleStartPracticeSession, startSolveIssue: handleStartSolveIssue, startVideoGeneration: handleStartVideoGeneration, startGlobalChat: handleStartGlobalChat, onQuestionsGenerated: handleQuestionsGenerated, generateReport: handleGenerateReport, handleSubmitQuiz: handleSubmitQuiz, regenerateQuiz: handleRegenerateQuiz, logout: handleLogout, addLearningModule
+  }), [appState, studentProfile, generatedQuiz, quizSource, avatarState, chatHistory, score, streak, progressReport, userAnswers, quizScore, quizResults, lastUploadedFiles, quizCustomization, learningModules, completedModules, lastModuleCompleted, practiceProblem, userPracticeAnswer, problemFeedback, user, quizHistory, selectedQuizAttempt, theme, isSubmitting, submissionError, onlineUsers, chatPartner, handleStateChange, updateStudentProfile, updateScore, handleThemeChange, handleStartApp, handleStartLesson, handleStartPracticeSession, handleStartSolveIssue, handleStartVideoGeneration, handleStartGlobalChat, handleQuestionsGenerated, handleGenerateReport, handleSubmitQuiz, handleRegenerateQuiz, handleLogout, addLearningModule]);
 
   if (!isSupabaseConfigured) {
     return (
