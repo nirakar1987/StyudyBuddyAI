@@ -138,6 +138,58 @@ export async function analyzeAndGenerateQuestions(
   }
 }
 
+export async function extractChaptersFromFile(
+  file: File,
+  profile: Pick<StudentProfile, 'grade' | 'subject'>
+): Promise<{ title: string; description: string; keyPoints: string[] }[]> {
+  const ai = getAiClient();
+  const imagePart = await fileToGenerativePart(file);
+
+  const prompt = `Analyze this uploaded file (Textbook/Syllabus). 
+  Target Audience: Grade ${profile.grade} ${profile.subject}.
+  
+  Objective: Identify and extract the specific chapters or distinct topics present in this file. 
+  
+  Return a JSON array where each object has:
+  - "title": The precise name of the chapter or topic.
+  - "description": A short, 1-sentence summary of what this chapter covers.
+  - "keyPoints": An array of 3-5 key concepts or keywords from this chapter.
+  
+  If the file contains a table of contents, use that. If it's a chapter text, break it down into logical sections if multiple topics exist, or return it as a single chapter if it's just one.`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-pro-preview',
+      contents: [{ parts: [imagePart, { text: prompt }] }],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              title: { type: Type.STRING },
+              description: { type: Type.STRING },
+              keyPoints: { type: Type.ARRAY, items: { type: Type.STRING } }
+            },
+            required: ["title", "description", "keyPoints"]
+          }
+        },
+      },
+    });
+
+    return JSON.parse(response.text.trim());
+  } catch (error) {
+    console.error("Failed to extract chapters:", error);
+    // Fallback: return the file name as a single chapter
+    return [{
+      title: file.name.replace(/\.[^/.]+$/, ""),
+      description: "Uploaded content",
+      keyPoints: ["General Content"]
+    }];
+  }
+}
+
 let chatInstance: Chat | null = null;
 
 export function startChat(profile: StudentProfile): Chat {

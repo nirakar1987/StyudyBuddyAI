@@ -1,7 +1,6 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { AppState, AppContextType, AvatarState } from '../types';
-import { analyzeAndGenerateQuestions } from '../services/geminiService';
+import { analyzeAndGenerateQuestions, extractChaptersFromFile } from '../services/geminiService';
 import { BookOpenIcon } from './icons/BookOpenIcon';
 import { ArrowLeftOnRectangleIcon } from './icons/ArrowLeftOnRectangleIcon';
 import { SparklesIcon } from './icons/SparklesIcon';
@@ -33,7 +32,7 @@ const BookQuizView: React.FC<BookQuizViewProps> = ({ context }) => {
         if (!currentSubject) return [];
 
         return allModules.filter(m => {
-            // Include uploaded files for this subject if matches
+            // Include uploaded files/chapters for this subject if matches
             if (m.file && m.subject.toLowerCase() === currentSubject) return true;
 
             // Filter by Grade if mapped
@@ -65,21 +64,37 @@ const BookQuizView: React.FC<BookQuizViewProps> = ({ context }) => {
         if (!files || files.length === 0 || !studentProfile) return;
 
         const file = files[0];
+        setIsGenerating(true);
+        setSelectedChapter(`Analyzing Syllabus...`);
+        setAvatarState(AvatarState.THINKING);
 
-        // Create a new module from the file
-        // This "saves" the syllabus as a selectable module
-        const newModule: any = {
-            id: `upload-${Date.now()}`,
-            title: file.name.replace(/\.[^/.]+$/, ""), // Remove extension
-            subject: selectedFilterSubject,
-            description: "Uploaded Syllabus/Chapter",
-            requiredTopics: [],
-            file: file
-        };
+        try {
+            // New Logic: Extract chapters instead of treating file as one blob
+            const chapters = await extractChaptersFromFile(file, studentProfile);
 
-        addLearningModule(newModule);
+            // Add each extracted chapter as a learning module
+            chapters.forEach((chapter, index) => {
+                const newModule: any = {
+                    id: `upload-${Date.now()}-${index}`,
+                    title: chapter.title,
+                    subject: selectedFilterSubject,
+                    description: chapter.description,
+                    requiredTopics: chapter.keyPoints || [],
+                    file: file, // All modules share the original file reference
+                    focusContext: chapter.title // IMPORTANT: This tells the quiz generator to focus on this chapter
+                };
+                addLearningModule(newModule);
+            });
 
-        if (fileInputRef.current) fileInputRef.current.value = '';
+        } catch (error) {
+            console.error("Failed to process uploaded file:", error);
+            alert("Failed to read the syllabus file. Please try again.");
+        } finally {
+            setIsGenerating(false);
+            setSelectedChapter(null);
+            setAvatarState(AvatarState.IDLE);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
     };
 
     const handleStartQuiz = async (module: any) => {
@@ -93,7 +108,11 @@ const BookQuizView: React.FC<BookQuizViewProps> = ({ context }) => {
             let quiz;
 
             if (module.file) {
-                // Generate quiz from uploaded file
+                // Generate quiz from uploaded file with specific focus
+                const systemPrompt = module.focusContext
+                    ? `Use the uploaded file. Focus SPECIFICALLY on the chapter/topic: "${module.focusContext}". Generate questions ONLY from this section of the content.`
+                    : `Analyze this uploaded content. Subject: ${selectedFilterSubject}. Generate a quiz based strictly on this content.`;
+
                 quiz = await analyzeAndGenerateQuestions(
                     [module.file],
                     studentProfile,
@@ -103,7 +122,7 @@ const BookQuizView: React.FC<BookQuizViewProps> = ({ context }) => {
                         numOptions: 4,
                         questionType: 'Multiple Choice'
                     },
-                    `Analyze this uploaded chapter content. Subject: ${selectedFilterSubject}. Generate a quiz based strictly on this content.`
+                    systemPrompt
                 );
                 setQuizSource({ type: 'upload', data: module.file.name });
                 setLastUploadedFiles([module.file]);

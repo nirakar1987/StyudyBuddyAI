@@ -108,6 +108,7 @@ export interface LearningModule {
   requiredTopics: string[];
   grades?: number[];
   file?: File;
+  focusContext?: string; // Specific chapter/topic to focus on within the file
 }
 
 export interface PracticeProblem {
