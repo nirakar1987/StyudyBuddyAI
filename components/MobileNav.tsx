@@ -1,5 +1,6 @@
 import React from 'react';
 import { AppState, StudentProfile } from '../types';
+import { useSoundEffects } from '../hooks/useSoundEffects';
 // Icons are used inline as SVGs to avoid extra dependencies
 
 // Using the icons from your existing icon set if available, or generic span if not
@@ -14,6 +15,7 @@ interface MobileNavProps {
 }
 
 const MobileNav: React.FC<MobileNavProps> = ({ appState, setAppState, studentProfile }) => {
+    const { playHoverSound } = useSoundEffects();
     if (!studentProfile || appState === AppState.PROFILE_SETUP) return null;
 
     const navItems = [
@@ -53,6 +55,7 @@ const MobileNav: React.FC<MobileNavProps> = ({ appState, setAppState, studentPro
                     <button
                         key={item.label}
                         onClick={() => setAppState(item.state)}
+                        onMouseEnter={playHoverSound}
                         className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${appState === item.state
                             ? 'text-[var(--color-primary)] bg-white/5'
                             : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'

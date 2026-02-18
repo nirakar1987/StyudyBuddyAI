@@ -2,6 +2,7 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { AppContextType, AppState, GeneratedQuiz } from '../types';
 import { analyzeAndGenerateQuestions } from '../services/geminiService';
+import { useToast } from '../context/ToastContext';
 import { CameraIcon } from './icons/CameraIcon';
 import { UploadIcon } from './icons/UploadIcon';
 import { SparklesIcon } from './icons/SparklesIcon';
@@ -185,10 +186,20 @@ const CameraCapture: React.FC<{ onDone: (files: File[]) => void, onExit: () => v
 };
 
 
+const QUIZ_PROGRESS_MESSAGES = [
+    'Preparing images...',
+    'Analyzing your materials...',
+    'Identifying key concepts...',
+    'Generating questions...',
+    'Almost done...',
+];
+
 const UploadView: React.FC<UploadViewProps> = ({ context }) => {
     const { user, studentProfile, onQuestionsGenerated, quizCustomization, setQuizCustomization, setGeneratedQuiz, setAppState } = context;
+    const { addToast } = useToast();
     const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [progressMessage, setProgressMessage] = useState(QUIZ_PROGRESS_MESSAGES[0]);
     const [error, setError] = useState<string | null>(null);
     const [showCamera, setShowCamera] = useState(false);
     const [resumableQuiz, setResumableQuiz] = useState<GeneratedQuiz | null>(null);
@@ -292,15 +303,31 @@ const UploadView: React.FC<UploadViewProps> = ({ context }) => {
 
         setIsLoading(true);
         setError(null);
+        setProgressMessage(QUIZ_PROGRESS_MESSAGES[0]);
+
+        const progressInterval = setInterval(() => {
+            setProgressMessage((prev) => {
+                const idx = QUIZ_PROGRESS_MESSAGES.indexOf(prev);
+                return QUIZ_PROGRESS_MESSAGES[(idx + 1) % QUIZ_PROGRESS_MESSAGES.length];
+            });
+        }, 2500);
+
         try {
+            if (validFileObjects.length > 0) {
+                setProgressMessage('Preparing images...');
+            }
             const customizationWithTypes = {
                 ...quizCustomization,
                 questionType: selectedQuestionType
             };
             const quiz = await analyzeAndGenerateQuestions(validFileObjects, studentProfile, customizationWithTypes, topicInput);
+            clearInterval(progressInterval);
             onQuestionsGenerated(quiz, validFileObjects);
+            addToast('Quiz created successfully!', 'success');
         } catch (err: any) {
+            clearInterval(progressInterval);
             setError(err.message);
+            addToast(err.message || 'Failed to generate quiz. Please try again.', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -431,8 +458,8 @@ const UploadView: React.FC<UploadViewProps> = ({ context }) => {
                     >
                         {isLoading ? (
                             <>
-                                <div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin" />
-                                Designing Quiz...
+                                <div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin flex-shrink-0" />
+                                {progressMessage}
                             </>
                         ) : (
                             <>

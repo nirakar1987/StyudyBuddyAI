@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { AppContextType } from '../types';
 import { SparklesIcon } from './icons/SparklesIcon';
 import { LightBulbIcon } from './icons/LightBulbIcon';
@@ -1408,9 +1408,9 @@ const MathMasteryView: React.FC<MathMasteryViewProps> = ({ context }) => {
                                             <div>
                                                 <h4 className="text-lg font-bold text-purple-300 mb-3">Basic Trig Functions</h4>
                                                 <div className="bg-slate-700 rounded-xl p-6 space-y-3">
-                                                    <p className="text-white"><strong>sin(θ)</strong> = Opposite / Hypotenuse</p>
-                                                    <p className="text-white"><strong>cos(θ)</strong> = Adjacent / Hypotenuse</p>
-                                                    <p className="text-white"><strong>tan(θ)</strong> = Opposite / Adjacent</p>
+                                                    <p className="text-white"><strong>sin(╬╕)</strong> = Opposite / Hypotenuse</p>
+                                                    <p className="text-white"><strong>cos(╬╕)</strong> = Adjacent / Hypotenuse</p>
+                                                    <p className="text-white"><strong>tan(╬╕)</strong> = Opposite / Adjacent</p>
                                                 </div>
                                             </div>
 
@@ -1448,7 +1448,7 @@ const MathMasteryView: React.FC<MathMasteryViewProps> = ({ context }) => {
                                                     <p className="text-white mb-4">In a right triangle, if the opposite side = 3 and hypotenuse = 5:</p>
                                                     <div className="space-y-3">
                                                         <div className="flex items-center gap-4">
-                                                            <span className="text-white">sin(θ) = </span>
+                                                            <span className="text-white">sin(╬╕) = </span>
                                                             <input
                                                                 type="text"
                                                                 placeholder="0.6 or 3/5"

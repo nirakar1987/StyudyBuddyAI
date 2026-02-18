@@ -5,6 +5,7 @@ import { generatePerformancePrediction } from '../services/geminiService';
 import { ChartBarIcon } from './icons/ChartBarIcon';
 import { ArrowLeftOnRectangleIcon } from './icons/ArrowLeftOnRectangleIcon';
 import { SparklesIcon } from './icons/SparklesIcon';
+import { SkeletonCard, SkeletonChart } from './SkeletonCard';
 
 interface AnalyticsViewProps {
     context: AppContextType;
@@ -41,9 +42,11 @@ const AnalyticsView: React.FC<AnalyticsViewProps> = ({ context }) => {
             </div>
 
             {isLoading ? (
-                <div className="flex flex-col items-center justify-center flex-grow text-slate-400">
-                    <div className="w-8 h-8 border-4 border-violet-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                    analyzing learning patterns...
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <SkeletonChart />
+                    <SkeletonCard className="h-32" />
+                    <SkeletonCard />
+                    <SkeletonCard />
                 </div>
             ) : history.length === 0 ? (
                 <div className="flex flex-col items-center justify-center flex-grow text-center">

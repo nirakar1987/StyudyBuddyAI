@@ -6,38 +6,72 @@ const SOUNDS = {
   INCORRECT: 'data:audio/wav;base64,UklGRlIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAMA/AMD/AMC/AMD/AMD/AMD/AMD/AMD/AMD/AMD/AMD/AMD/AMC/AMD/AMC/AMC/AMD/AMD/AMD/AMD/AMD/AMC/AMD/AMD/AMD/AMC/AMD/AMD/AMA/AMD/AMD/AMA/AMC/AMA/AMD/AMA/AMD/AMA/AMD/AMD/AMA/AMD/AMA/AMA/AMA/AMD/AMD/AMC/AMC/AMC/AMC/AMD/AMD/AMA/AMA/AMA/AMD/AMA/AMC/AMC/AMA/AMC/AMA/AMC/AMA/AMC/AMA/',
   SUBMIT: 'data:audio/wav;base64,UklGRlIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAADgAP4A/wD/AP8A/AD4APIA7ADiANgA0QDHALEAogB+AHgAaQBCAC4AIgAcABoAGgAbABwAHgAgACMAKgAvADIANwA+AEQASgBSAFkAXwBlAGsAcQBzAHUAdgB1AHMAbwBsAGgAZQBfAFoAVQBQAEsARgBBADsANgAyAC8ALQApACUALgA1ADsARgBPAGAAcwB4AGwAZABWAD4ALgAZABMAEgATABUAFwAcACEAJgAuADYAPwBEAEcARwBEAEAAOQA0ADEALgArACgAJwAmACgAKgAvADIANwA/',
   COMPLETE: 'data:audio/wav;base64,UklGRlIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAADgAOgA+gEAAQUBGQEzASIBGgEGAAMADgAwAD0ASABQAFgAXgBjAGgAaQBoAGYAZQBjAGAAXQBXAFIAUgBUAFUAVgBSAFEAUABQAE8ATwBPAE8AUQBRAFIAUgBTAFMBUgBRAFEAUABPAE8ATgBOAE0ATQBOAE4ATwBPAE8AUABRAFEAUQBSAFIAUgBSAFIAUgBTAFMAUwBTAFMAUgBRAFAATwBOAE0ATABLAEoASQBIAEcARgBFAEQAQwBCAEIAQgBCAEIAQgBDAEQARgBIAEoATgBSAFI=',
-  HOVER: 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAMAAD//v8=/9/7/MP9/7j/tv+4/7j/tP+0/7j/uP+4/7j/uP+4/7j/uP+4/w==',
+  HOVER: 'data:audio/wav;base64,UklGRlIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAADgAP4A/wD/AP8A/AD4APIA7ADiANgA0QDHALEAogB+AHgAaQBCAC4AIgAcABoAGgAbABwAHgAgACMAKgAvADIANwA+AEQASgBSAFkAXwBlAGsAcQBzAHUAdgB1AHMAbwBsAGgAZQBfAFoAVQBQAEsARgBBADsANgAyAC8ALQApACUALgA1ADsARgBPAGAAcwB4AGwAZABWAD4ALgAZABMAEgATABUAFwAcACEAJgAuADYAPwBEAEcARwBEAEAAOQA0ADEALgArACgAJwAmACgAKgAvADIANwA/',
 };
 
+// Shared state for audio unlock - browsers block sound until user clicks/taps
+let audioUnlocked = false;
+
+function unlockAudio() {
+  if (audioUnlocked) return;
+  audioUnlocked = true;
+  // Play a silent sound to unlock - must be in direct response to user gesture
+  const a = new Audio(SOUNDS.HOVER);
+  a.volume = 0.5;
+  a.play().catch(() => {});
+}
+
+// One-time listener to unlock audio on first user interaction
+if (typeof document !== 'undefined') {
+  const unlock = () => {
+    unlockAudio();
+    document.removeEventListener('click', unlock);
+    document.removeEventListener('touchstart', unlock);
+    document.removeEventListener('keydown', unlock);
+  };
+  document.addEventListener('click', unlock, { once: true, capture: true });
+  document.addEventListener('touchstart', unlock, { once: true, capture: true });
+  document.addEventListener('keydown', unlock, { once: true, capture: true });
+}
 
 /**
  * A custom hook to play sound effects for UI interactions.
  * It ensures only one sound plays at a time.
+ * Note: User must click/tap anywhere first to unlock audio (browser policy).
  */
 export const useSoundEffects = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const lastHoverRef = useRef(0);
 
   const playSound = useCallback((soundUrl: string) => {
-    // Stop any currently playing sound to prevent overlap
+    unlockAudio();
     if (audioRef.current && !audioRef.current.paused) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     }
-    
-    // Create and play the new sound. Users must interact with the page first for this to work.
     audioRef.current = new Audio(soundUrl);
-    audioRef.current.play().catch(error => {
-      // Autoplay was prevented. This is a common browser security feature.
-      // We can ignore this for this app as sounds are triggered by user actions.
-      console.log("Sound playback failed (likely requires user interaction first):", error);
-    });
+    audioRef.current.volume = 0.6;
+    audioRef.current.play().catch(() => {});
+  }, []);
+
+  const playHoverSound = useCallback(() => {
+    unlockAudio();
+    const now = Date.now();
+    if (now - lastHoverRef.current < 80) return;
+    lastHoverRef.current = now;
+    if (audioRef.current && !audioRef.current.paused) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    audioRef.current = new Audio(SOUNDS.HOVER);
+    audioRef.current.volume = 0.5;
+    audioRef.current.play().catch(() => {});
   }, []);
 
   const playCorrectSound = useCallback(() => playSound(SOUNDS.CORRECT), [playSound]);
   const playIncorrectSound = useCallback(() => playSound(SOUNDS.INCORRECT), [playSound]);
   const playSubmitSound = useCallback(() => playSound(SOUNDS.SUBMIT), [playSound]);
   const playCompleteSound = useCallback(() => playSound(SOUNDS.COMPLETE), [playSound]);
-  const playHoverSound = useCallback(() => playSound(SOUNDS.HOVER), [playSound]);
 
   return { playCorrectSound, playIncorrectSound, playSubmitSound, playCompleteSound, playHoverSound };
 };

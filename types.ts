@@ -203,4 +203,5 @@ export interface AppContextType {
   regenerateQuiz: () => void;
   logout: () => Promise<void>;
   addLearningModule: (module: LearningModule) => void;
+  removeLearningModule: (moduleId: string) => void;
 }

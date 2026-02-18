@@ -2,6 +2,9 @@
 import { GoogleGenAI, Type, Chat, GenerateContentResponse } from "@google/genai";
 import { GeneratedQuiz, StudentProfile, ChatMessage, ChatPart, PracticeProblem, ProblemFeedback, GeneratedQuestion, VideoData } from "../types";
 import { LEARNING_MODULES } from '../data/modules';
+import { withRetry } from '../utils/apiRetry';
+import { safeJsonParse } from '../utils/safeJsonParse';
+import { prepareImagesForQuiz } from '../utils/imageCompression';
 
 const API_KEY = process.env.API_KEY;
 
@@ -35,28 +38,31 @@ function fileToGenerativePart(file: File): Promise<{ inlineData: { data: string;
   });
 }
 
-function handleApiError(error: any): string {
+function handleApiError(error: unknown): string {
   console.error("Gemini API Error Detail:", error);
+  const message = String((error as Error)?.message ?? "");
 
-  const message = error?.message || "";
-
-  if (message.toLowerCase().includes("failed to fetch")) {
-    return "Network Error: Could not reach the AI service. Please check your internet connection or firewall settings.";
+  if (message.toLowerCase().includes("failed to fetch") || message.includes("NetworkError")) {
+    return "We couldn't reach the AI service. Please check your internet connection and try again.";
   }
 
-  if (message.includes('429')) {
-    return "You've made too many requests recently. Please wait a moment and try again.";
+  if (message.includes('429') || message.includes('rate limit')) {
+    return "Too many requests. Please wait a moment and try again.";
   }
 
   if (message.includes('API key not found') || message.includes('invalid') || message.includes('403')) {
-    return "The AI API key is missing or invalid. Please check your configuration.";
+    return "AI service configuration error. Please check your API key.";
   }
 
   if (message.includes('SAFETY') || message.includes('blocked')) {
-    return "The request was blocked for safety reasons. Please modify your prompt or content.";
+    return "This request was blocked for safety. Please try rephrasing or using different content.";
   }
 
-  return `AI Error: ${message || "An unexpected error occurred with the AI service. Please try again."}`;
+  if (message.includes('invalid data') || message.includes('SyntaxError')) {
+    return "The AI returned unexpected data. Please try again.";
+  }
+
+  return "Something went wrong with the AI service. Please try again.";
 }
 
 export async function analyzeAndGenerateQuestions(
@@ -66,7 +72,9 @@ export async function analyzeAndGenerateQuestions(
   topic?: string
 ): Promise<GeneratedQuiz> {
   const ai = getAiClient();
-  const imageParts = await Promise.all(files.map(fileToGenerativePart));
+  // Compress and limit images for faster API response
+  const preparedFiles = files.length > 0 ? await prepareImagesForQuiz(files) : [];
+  const imageParts = await Promise.all(preparedFiles.map(fileToGenerativePart));
 
   const numDistractors = customization.numOptions - 1;
   const questionTypeInstruction = customization.questionType && customization.questionType !== 'Mixed'
@@ -101,23 +109,25 @@ export async function analyzeAndGenerateQuestions(
   };
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
-      contents: [{ parts: [...imageParts, { text: prompt }] }],
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            topics: { type: Type.ARRAY, items: { type: Type.STRING } },
-            questions: { type: Type.ARRAY, items: questionSchema }
+    const response = await withRetry(async () => {
+      return await ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: [{ parts: [...imageParts, { text: prompt }] }],
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              topics: { type: Type.ARRAY, items: { type: Type.STRING } },
+              questions: { type: Type.ARRAY, items: questionSchema }
+            },
+            required: ["topics", "questions"]
           },
-          required: ["topics", "questions"]
         },
-      },
+      });
     });
 
-    const quiz: GeneratedQuiz = JSON.parse(response.text.trim());
+    const quiz = safeJsonParse<GeneratedQuiz>(response.text, "Failed to generate quiz.");
 
     // Post-process to shuffle options for Multiple Choice questions
     if (quiz.questions) {
@@ -145,40 +155,49 @@ export async function extractChaptersFromFile(
   const ai = getAiClient();
   const imagePart = await fileToGenerativePart(file);
 
-  const prompt = `Analyze this uploaded file (Textbook/Syllabus). 
+  const prompt = `Analyze this uploaded file (Textbook/Syllabus Image). 
   Target Audience: Grade ${profile.grade} ${profile.subject}.
   
   Objective: Identify and extract the specific chapters or distinct topics present in this file. 
   
+  **CRITICAL INSTRUCTIONS FOR IMAGE EXTRACTION:**
+  1. **LOOK FOR SCANNED LISTS**: If the image contains a numbered list (e.g. "1. How Plants...", "2. Adaptations...", "8. Clothes..."), YOU MUST EXTRACT THESE EXACT TITLES.
+  2. **IGNORE HANDWRITTEN MARKS**: Ignore checkmarks, circles, or scribbles. Focus on the printed text.
+  3. **DETECT CONTENTS PAGES**: If the image looks like a "History", "Index", or "Contents" page, preserve the order and titles exactly as shown.
+  4. **NO HALLUCINATIONS**: Do not make up chapters. Only return what is visible in the text/image.
+  5. **FORMAT**: Clean up the titles (remove "Unit 1", "Chapter 5" prefixes if they are clutter, but keep the core title).
+  
   Return a JSON array where each object has:
-  - "title": The precise name of the chapter or topic.
-  - "description": A short, 1-sentence summary of what this chapter covers.
+  - "title": The precise name of the chapter (e.g. "Solids, Liquids and Gases", "The Solar System").
+  - "description": A short, 1-sentence summary of what this chapter covers based on subheadings if visible, or general knowledge.
   - "keyPoints": An array of 3-5 key concepts or keywords from this chapter.
   
-  If the file contains a table of contents, use that. If it's a chapter text, break it down into logical sections if multiple topics exist, or return it as a single chapter if it's just one.`;
+  If the file contains a table of contents, use that. If it's a chapter text, break it down into logical sections.`;
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash-exp',
-      contents: [{ parts: [imagePart, { text: prompt }] }],
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              title: { type: Type.STRING },
-              description: { type: Type.STRING },
-              keyPoints: { type: Type.ARRAY, items: { type: Type.STRING } }
-            },
-            required: ["title", "description", "keyPoints"]
+    const response = await withRetry(async () => {
+      return await ai.models.generateContent({
+        model: 'gemini-2.0-flash-exp',
+        contents: [{ parts: [imagePart, { text: prompt }] }],
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                title: { type: Type.STRING },
+                description: { type: Type.STRING },
+                keyPoints: { type: Type.ARRAY, items: { type: Type.STRING } }
+              },
+              required: ["title", "description", "keyPoints"]
+            }
           }
         },
-      },
+      });
     });
 
-    return JSON.parse(response.text.trim());
+    return safeJsonParse<{ title: string; description: string; keyPoints: string[] }[]>(response.text, "Failed to extract chapters.");
   } catch (error) {
     console.error("Failed to extract chapters:", error);
     // Fallback: return the file name as a single chapter
@@ -258,7 +277,7 @@ export function startTimeTravelChat(figure: any, profile: StudentProfile): Chat 
 export async function continueChat(message: string): Promise<GenerateContentResponse> {
   if (!chatInstance) throw new Error("Chat not initialized.");
   try {
-    return await chatInstance.sendMessage({ message });
+    return await withRetry(() => chatInstance!.sendMessage({ message }));
   } catch (e) {
     throw new Error(handleApiError(e));
   }
@@ -273,11 +292,11 @@ export async function generateContentWithSearch(history: ChatMessage[], message:
   contents.push({ role: 'user', parts: [{ text: message }] });
 
   try {
-    return await ai.models.generateContent({
+    return await withRetry(() => ai.models.generateContent({
       model: "gemini-3-pro-preview",
       contents: contents,
       config: { tools: [{ googleSearch: {} }] },
-    });
+    }));
   } catch (e) {
     throw new Error(handleApiError(e));
   }
@@ -298,17 +317,17 @@ export async function findEducationalVideo(
   Return strictly valid JSON with a "videos" key containing an array of objects, where each object has: "youtubeUrl", "title", "description".`;
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await withRetry(() => ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: [{ parts: [{ text: prompt }] }],
       config: { tools: [{ googleSearch: {} }] },
-    });
+    }));
 
     const text = response.text.trim();
     const match = text.match(/{[\s\S]*}/);
     if (!match) throw new Error("Could not parse AI video recommendations.");
 
-    const parsed = JSON.parse(match[0]);
+    const parsed = safeJsonParse<{ videos?: { youtubeUrl?: string; title?: string; description?: string }[] }>(match[0], "Could not parse video recommendations.");
     const videos = parsed.videos || [];
 
     const getYouTubeIdFromUrl = (url: string | null): string | null => {
@@ -346,13 +365,13 @@ export async function generateProgressReport(
   const prompt = `Generate a parent's progress report for a ${profile.grade}th grade student in ${profile.subject}. Summarize topics, strengths, and review needs from transcript:\n${transcript}`;
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await withRetry(() => ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: [{ parts: [{ text: prompt }] }],
-    });
+    }));
     return response.text;
   } catch (error) {
-    return "Failed to generate report.";
+    return "Failed to generate report. Please try again.";
   }
 }
 
@@ -362,10 +381,10 @@ export async function analyzeHandwrittenWork(file: File, lastQuestion: string): 
   const prompt = `Analyze handwritten work for: "${lastQuestion}". Praise effort, find logical mistakes, guide correctly without just giving the answer. Supportive tone.`;
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await withRetry(() => ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: [{ parts: [imagePart, { text: prompt }] }],
-    });
+    }));
     return response.text;
   } catch (error) {
     throw new Error(handleApiError(error));
@@ -387,7 +406,7 @@ export async function generatePracticeProblem(
   const prompt = `Generate a single practice problem for a ${profile.grade}th standard student in ${profile.subject} ${context}.`;
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await withRetry(() => ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: [{ parts: [{ text: prompt }] }],
       config: {
@@ -401,9 +420,9 @@ export async function generatePracticeProblem(
           required: ["topic", "question"]
         },
       },
-    });
+    }));
 
-    return JSON.parse(response.text.trim());
+    return safeJsonParse<PracticeProblem>(response.text, "Failed to generate practice problem.");
   } catch (error) {
     throw new Error(handleApiError(error));
   }
@@ -418,7 +437,7 @@ export async function evaluatePracticeAnswer(
   const prompt = `Evaluate answer for: "${problem.question}". Student's answer: "${answer}". Grade ${profile.grade} subject ${profile.subject}.`;
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await withRetry(() => ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: [{ parts: [{ text: prompt }] }],
       config: {
@@ -432,9 +451,9 @@ export async function evaluatePracticeAnswer(
           required: ["isCorrect", "feedbackText"]
         },
       },
-    });
+    }));
 
-    return JSON.parse(response.text.trim());
+    return safeJsonParse<ProblemFeedback>(response.text, "Failed to evaluate answer.");
   } catch (error) {
     throw new Error(handleApiError(error));
   }
@@ -447,7 +466,7 @@ export async function evaluateAnswerSemantically(
   const prompt = `Is "${params.userAnswer}" correct for "${params.questionText}" given the key is "${params.correctAnswer}"? Respond JSON {"isCorrect": boolean}.`;
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await withRetry(() => ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: [{ parts: [{ text: prompt }] }],
       config: {
@@ -460,9 +479,9 @@ export async function evaluateAnswerSemantically(
           required: ["isCorrect"]
         },
       },
-    });
+    }));
 
-    return JSON.parse(response.text.trim());
+    return safeJsonParse<{ isCorrect: boolean }>(response.text, "Failed to evaluate answer.");
   } catch (error) {
     return { isCorrect: false };
   }
@@ -475,10 +494,10 @@ export async function generateProblemSolution(
   const ai = getAiClient();
   const prompt = `Provide step-by-step solution for: "${problem.question}". Grade ${profile.grade} ${profile.subject}.`;
   try {
-    const response = await ai.models.generateContent({
+    const response = await withRetry(() => ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: [{ parts: [{ text: prompt }] }],
-    });
+    }));
     return response.text;
   } catch (error) {
     throw new Error(handleApiError(error));
@@ -493,10 +512,10 @@ export async function generateAnswerExplanation(
   const prompt = `Explain why "${question.correctAnswer}" is correct for "${question.questionText}". User answered "${userAnswer || 'nothing'}".`;
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await withRetry(() => ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: [{ parts: [{ text: prompt }] }],
-    });
+    }));
     return response.text;
   } catch (error) {
     throw new Error(handleApiError(error));
@@ -514,7 +533,7 @@ export async function getMathStepByStepSolution(
   Format as a JSON array of strings, where each string is one step.`;
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await withRetry(() => ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: [{ parts: [{ text: prompt }] }],
       config: {
@@ -524,9 +543,9 @@ export async function getMathStepByStepSolution(
           items: { type: Type.STRING }
         }
       }
-    });
+    }));
 
-    return JSON.parse(response.text.trim());
+    return safeJsonParse<string[]>(response.text, "Failed to generate solution steps.");
   } catch (error) {
     throw new Error(handleApiError(error));
   }
@@ -596,7 +615,7 @@ export async function generateStudyPlan(
     Ensure the plan is balanced and realistic.`;
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await withRetry(() => ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: [{ parts: [{ text: prompt }] }],
       config: {
@@ -622,13 +641,12 @@ export async function generateStudyPlan(
           required: ["schedule"]
         }
       },
-    });
-    return JSON.parse(response.text.trim());
+    }));
+    return safeJsonParse(response.text, "Failed to generate study plan.");
   } catch (error) {
     throw new Error(handleApiError(error));
   }
 }
-// ... (existing code)
 
 export async function generatePerformancePrediction(
   profile: StudentProfile,
@@ -657,7 +675,7 @@ export async function generatePerformancePrediction(
   }`;
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await withRetry(() => ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: [{ parts: [{ text: prompt }] }],
       config: {
@@ -672,8 +690,8 @@ export async function generatePerformancePrediction(
           required: ["prediction", "insights", "recommendedFocus"]
         }
       }
-    });
-    return JSON.parse(response.text.trim());
+    }));
+    return safeJsonParse<{ prediction: string; insights: string[]; recommendedFocus: string }>(response.text, "Failed to generate prediction.");
   } catch (error) {
     return {
       prediction: "Data insufficient for prediction.",
@@ -682,7 +700,6 @@ export async function generatePerformancePrediction(
     };
   }
 }
-// ... (existing code)
 
 export interface Atom {
   element: string;
@@ -716,7 +733,7 @@ export async function generate3DMolecule(
   Ensure coordinates are centered around 0,0,0 and scaled reasonably (e.g. within -3 to 3 range).`;
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await withRetry(() => ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: [{ parts: [{ text: prompt }] }],
       config: {
@@ -750,9 +767,9 @@ export async function generate3DMolecule(
           required: ["name", "description", "atoms", "bonds"]
         }
       }
-    });
+    }));
 
-    return JSON.parse(response.text.trim());
+    return safeJsonParse<MoleculeData>(response.text, "Failed to generate molecule data.");
   } catch (error) {
     throw new Error(handleApiError(error));
   }
@@ -818,7 +835,7 @@ export async function getSubjectChapters(profile: StudentProfile, board: string 
   ["Chemical Reactions and Equations", "Acids, Bases and Salts", "Metals and Non-metals"]`;
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await withRetry(() => ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: [{ parts: [{ text: prompt }] }],
       config: {
@@ -828,16 +845,14 @@ export async function getSubjectChapters(profile: StudentProfile, board: string 
           items: { type: Type.STRING }
         }
       }
-    });
+    }));
 
-    return JSON.parse(response.text.trim());
+    return safeJsonParse<string[]>(response.text, "Failed to fetch chapters.");
   } catch (error) {
-    // Fallback if AI fails
     console.error("Failed to fetch chapters:", error);
     return [`Chapter 1: ${profile.subject} Basics`, `Chapter 2: Advanced ${profile.subject}`, "Chapter 3: Application", "Chapter 4: Case Studies"];
   }
 }
-// ... (existing code)
 
 export interface ChapterQAItem {
   question: string;
@@ -868,7 +883,7 @@ export async function generateChapterQA(
   }`;
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await withRetry(() => ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: [{ parts: [{ text: prompt }] }],
       config: {
@@ -894,9 +909,9 @@ export async function generateChapterQA(
           required: ["chapterName", "questions"]
         }
       }
-    });
+    }));
 
-    return JSON.parse(response.text.trim());
+    return safeJsonParse<{ chapterName: string; questions: ChapterQAItem[] }>(response.text, "Failed to generate chapter Q&A.");
   } catch (error) {
     throw new Error(handleApiError(error));
   }
@@ -926,7 +941,7 @@ export async function generateFlashcards(
     ]`;
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await withRetry(() => ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: [{ parts: [{ text: prompt }] }],
       config: {
@@ -944,9 +959,9 @@ export async function generateFlashcards(
           }
         }
       }
-    });
+    }));
 
-    return JSON.parse(response.text.trim());
+    return safeJsonParse<Flashcard[]>(response.text, "Failed to generate flashcards.");
   } catch (error) {
     throw new Error(handleApiError(error));
   }
@@ -987,7 +1002,7 @@ export async function generatePodcastScript(
   }`;
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await withRetry(() => ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: [{
         parts: [
@@ -1016,9 +1031,9 @@ export async function generatePodcastScript(
           required: ["title", "segments"]
         }
       }
-    });
+    }));
 
-    return JSON.parse(response.text.trim());
+    return safeJsonParse<{ title: string; segments: PodcastSegment[] }>(response.text, "Failed to generate podcast script.");
   } catch (error) {
     throw new Error(handleApiError(error));
   }
@@ -1056,7 +1071,7 @@ export async function generatePatternGame(
     }`;
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await withRetry(() => ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: [{ parts: [{ text: prompt }] }],
       config: {
@@ -1074,9 +1089,9 @@ export async function generatePatternGame(
           required: ["sequence", "missingIndex", "options", "correctAnswer", "explanation", "difficulty"]
         }
       }
-    });
+    }));
 
-    return JSON.parse(response.text.trim());
+    return safeJsonParse<PatternGame>(response.text, "Failed to generate pattern game.");
   } catch (error) {
     throw new Error(handleApiError(error));
   }

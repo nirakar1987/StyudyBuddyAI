@@ -11,11 +11,30 @@ interface BookQuizViewProps {
 }
 
 const BookQuizView: React.FC<BookQuizViewProps> = ({ context }) => {
-    const { setAppState, setAvatarState, studentProfile, learningModules, setGeneratedQuiz, setLastUploadedFiles, setQuizSource, addLearningModule } = context;
+    const { setAppState, setAvatarState, studentProfile, learningModules, setGeneratedQuiz, setLastUploadedFiles, setQuizSource, addLearningModule, removeLearningModule } = context;
     const [isGenerating, setIsGenerating] = useState(false);
     const [selectedChapter, setSelectedChapter] = useState<string | null>(null);
     const [selectedFilterSubject, setSelectedFilterSubject] = useState<string>(studentProfile?.subject || 'Science');
+    const [isAddingChapter, setIsAddingChapter] = useState(false);
+    const [newChapterTitle, setNewChapterTitle] = useState('');
     const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+    const handleManualAddChapter = () => {
+        if (!newChapterTitle.trim()) return;
+
+        const newModule: any = {
+            id: `manual-${Date.now()}`,
+            title: newChapterTitle.trim(),
+            subject: selectedFilterSubject,
+            description: "Custom Chapter",
+            requiredTopics: ["General"],
+            grades: studentProfile?.grade ? [Number(studentProfile.grade)] : []
+        };
+
+        addLearningModule(newModule);
+        setNewChapterTitle('');
+        setIsAddingChapter(false);
+    };
 
     // Sync selected subject with profile subject changes
     useEffect(() => {
@@ -68,9 +87,9 @@ const BookQuizView: React.FC<BookQuizViewProps> = ({ context }) => {
         // Save the file as a single module immediately (Fast Update)
         const newModule: any = {
             id: `upload-${Date.now()}`,
-            title: file.name.replace(/\.[^/.]+$/, ""), // Remove extension
+            title: "Uploaded Syllabus (Processing...)", // More user friendly
             subject: selectedFilterSubject,
-            description: "Uploaded Syllabus (Click 'Detect Chapters' to analyze)",
+            description: "Click 'Detect Chapters' to organize this file.",
             requiredTopics: [],
             file: file
         };
@@ -87,26 +106,26 @@ const BookQuizView: React.FC<BookQuizViewProps> = ({ context }) => {
         setAvatarState(AvatarState.THINKING);
 
         try {
-            // New Logic: Extract chapters instead of treating file as one blob
+            // New Logic: Extract chapters from the file
             const chapters = await extractChaptersFromFile(module.file, studentProfile);
 
-            // Add each extracted chapter as a learning module
+            // 1. Remove the original "raw" module since we have processed it
+            removeLearningModule(module.id);
+
+            // 2. Add each extracted chapter as a NEW distinct learning module
             chapters.forEach((chapter, index) => {
                 const newModule: any = {
-                    id: `upload-${Date.now()}-${index}`,
+                    // Unique ID but linked to upload time
+                    id: `chapter-${Date.now()}-${index}`,
                     title: chapter.title,
                     subject: selectedFilterSubject,
                     description: chapter.description,
                     requiredTopics: chapter.keyPoints || [],
-                    file: module.file, // All modules share the original file reference
+                    file: module.file, // Each chapter keeps the reference to the original file
                     focusContext: chapter.title // IMPORTANT: This tells the quiz generator to focus on this chapter
                 };
                 addLearningModule(newModule);
             });
-
-            // Note: We don't explicitly remove the original "Raw" module here because the user might still want it.
-            // Or we could trigger a cleanup if we had a removeModule function.
-            // For now, let's just append the detected chapters.
 
         } catch (error) {
             console.error("Failed to process uploaded file:", error);
@@ -178,7 +197,53 @@ const BookQuizView: React.FC<BookQuizViewProps> = ({ context }) => {
 
     return (
         <div className="flex flex-col h-full animate-fade-in p-4 md:p-8">
-            <div className="flex justify-between items-center mb-6">
+            {/* Add Chapter Modal */}
+            {isAddingChapter && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="bg-slate-800 rounded-2xl border border-white/10 p-6 w-full max-w-md shadow-2xl">
+                        <h3 className="text-xl font-bold text-white mb-4">Add New Chapter</h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Subject</label>
+                                <input
+                                    type="text"
+                                    value={selectedFilterSubject}
+                                    disabled
+                                    className="w-full bg-slate-900 border border-white/5 rounded-xl px-4 py-3 text-slate-500 font-bold text-sm"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Chapter Name</label>
+                                <input
+                                    type="text"
+                                    value={newChapterTitle}
+                                    onChange={(e) => setNewChapterTitle(e.target.value)}
+                                    placeholder="e.g. Force and Motion"
+                                    className="w-full bg-slate-900 border border-indigo-500/30 focus:border-indigo-500 rounded-xl px-4 py-3 text-white font-medium text-sm outline-none transition-colors"
+                                    autoFocus
+                                />
+                            </div>
+                            <div className="flex gap-3 pt-2">
+                                <button
+                                    onClick={() => { setIsAddingChapter(false); setNewChapterTitle(''); }}
+                                    className="flex-1 py-3 bg-slate-700 hover:bg-slate-600 rounded-xl text-white font-bold text-xs uppercase tracking-wider transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleManualAddChapter}
+                                    disabled={!newChapterTitle.trim()}
+                                    className="flex-1 py-3 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-white font-bold text-xs uppercase tracking-wider transition-colors shadow-lg shadow-indigo-500/20"
+                                >
+                                    Add Chapter
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
                 <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-indigo-500 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
                         <BookOpenIcon className="w-7 h-7 text-white" />
@@ -189,6 +254,13 @@ const BookQuizView: React.FC<BookQuizViewProps> = ({ context }) => {
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => setIsAddingChapter(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-xl text-white font-bold text-xs uppercase tracking-widest border border-white/5 transition-all hover:scale-105"
+                    >
+                        <span className="text-xl leading-none mb-0.5">+</span> Add Chapter
+                    </button>
+
                     <input
                         type="file"
                         ref={fileInputRef}
@@ -253,8 +325,24 @@ const BookQuizView: React.FC<BookQuizViewProps> = ({ context }) => {
                                         <div className="w-10 h-10 bg-indigo-500/10 rounded-xl flex items-center justify-center group-hover:bg-indigo-500 transition-colors">
                                             <span className="text-xs font-black text-indigo-400 group-hover:text-white">#{index + 1}</span>
                                         </div>
-                                        <div className="px-2 py-1 bg-white/5 rounded text-[10px] font-bold text-slate-500 group-hover:text-indigo-300 transition-colors">
-                                            {module.subject}
+                                        <div className="flex items-center gap-2">
+                                            <div className="px-2 py-1 bg-white/5 rounded text-[10px] font-bold text-slate-500 group-hover:text-indigo-300 transition-colors">
+                                                {module.subject}
+                                            </div>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (confirm(`Are you sure you want to delete "${module.title}"?`)) {
+                                                        removeLearningModule(module.id);
+                                                    }
+                                                }}
+                                                className="p-1.5 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white rounded-lg transition-colors z-20 relative"
+                                                title="Delete Chapter"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                                </svg>
+                                            </button>
                                         </div>
                                     </div>
 

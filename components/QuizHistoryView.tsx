@@ -5,6 +5,7 @@ import { SparklesIcon } from './icons/SparklesIcon';
 import { TrashIcon } from './icons/TrashIcon';
 import ScoreRing from './ScoreRing';
 import { ArrowsUpDownIcon } from './icons/ArrowsUpDownIcon';
+import { SkeletonCard } from './SkeletonCard';
 
 interface QuizHistoryViewProps {
   context: AppContextType;
@@ -89,9 +90,12 @@ const QuizHistoryView: React.FC<QuizHistoryViewProps> = ({ context }) => {
     const renderContent = () => {
         if (isLoading) {
             return (
-                <div className="flex flex-col items-center justify-center h-full">
-                    <SparklesIcon className="w-12 h-12 text-[var(--color-primary)] animate-pulse" />
-                    <p className="mt-4 text-[var(--color-text-secondary)]">Loading your quiz history...</p>
+                <div className="space-y-4">
+                    <SkeletonCard />
+                    <SkeletonCard />
+                    <SkeletonCard />
+                    <SkeletonCard />
+                    <SkeletonCard />
                 </div>
             );
         }

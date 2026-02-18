@@ -14,6 +14,9 @@ import { getProfile, upsertProfile, addQuizAttempt } from './services/databaseSe
 import UserPresence from './components/UserPresence';
 import ChatNotificationPopup from './components/ChatNotificationPopup';
 import MobileNav from './components/MobileNav';
+import OfflineBanner from './components/OfflineBanner';
+import { useOffline } from './hooks/useOffline';
+import { useToast } from './context/ToastContext';
 import { ChatMessageRow } from './services/databaseService';
 
 
@@ -33,6 +36,8 @@ const getQuizId = (quiz: GeneratedQuiz | null): string | null => {
 
 
 const App: React.FC = () => {
+  const isOffline = useOffline();
+  const { addToast } = useToast();
   const [isLoadingSession, setIsLoadingSession] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [studentProfile, setStudentProfile] = useState<StudentProfile | null>(null);
@@ -48,7 +53,28 @@ const App: React.FC = () => {
   const [quizResults, setQuizResults] = useState<boolean[] | null>(null);
   const [lastUploadedFiles, setLastUploadedFiles] = useState<File[]>([]);
   const [quizCustomization, setQuizCustomization] = useState({ numQuestions: 5, difficulty: 'Medium', duration: 10, numOptions: 4 });
-  const [learningModules, setLearningModules] = useState<LearningModule[]>(LEARNING_MODULES);
+  const [learningModules, setLearningModules] = useState<LearningModule[]>(() => {
+    try {
+      const saved = localStorage.getItem('studybuddy_modules');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.error("Failed to load modules from storage", e);
+    }
+    return LEARNING_MODULES;
+  });
+
+  // Persist modules when they change
+  useEffect(() => {
+    const modulesToSave = learningModules.map(m => {
+      // Create a shallow copy and remove the 'file' property since File objects can't be serialized
+      // effectively for persistence, and we don't want empty objects {} confusing the app later.
+      const { file, ...rest } = m;
+      return rest;
+    });
+    localStorage.setItem('studybuddy_modules', JSON.stringify(modulesToSave));
+  }, [learningModules]);
   const [completedModules, setCompletedModules] = useState<string[]>([]);
   const [lastModuleCompleted, setLastModuleCompleted] = useState<string | null>(null);
   const [practiceProblem, setPracticeProblem] = useState<PracticeProblem | null>(null);
@@ -394,13 +420,15 @@ const App: React.FC = () => {
       }
 
       setAppState(AppState.QUIZ_RESULTS);
+      addToast('Quiz submitted successfully!', 'success');
     } catch (error: any) {
       console.error("Error submitting quiz:", JSON.stringify(error, null, 2));
       setSubmissionError("An error occurred while submitting your quiz. Please try again.");
+      addToast("Failed to submit quiz. Please try again.", 'error');
     } finally {
       setIsSubmitting(false);
     }
-  }, [isSubmitting, generatedQuiz, userAnswers, studentProfile, user, learningModules, updateStudentProfile]);
+  }, [isSubmitting, generatedQuiz, userAnswers, studentProfile, user, learningModules, updateStudentProfile, addToast]);
 
   const [quizSource, setQuizSource] = useState<any | null>(null);
 
@@ -453,11 +481,15 @@ const App: React.FC = () => {
     });
   }, []);
 
+  const removeLearningModule = useCallback((moduleId: string) => {
+    setLearningModules(prev => prev.filter(m => m.id !== moduleId));
+  }, []);
+
   const contextValue = useMemo(() => ({
     appState, studentProfile, generatedQuiz, quizSource, avatarState, chatHistory, score, streak, progressReport, userAnswers, quizScore, quizResults, lastUploadedFiles, quizCustomization, learningModules, completedModules, lastModuleCompleted, practiceProblem, userPracticeAnswer, problemFeedback, user, quizHistory, selectedQuizAttempt, theme, isSubmitting, submissionError, onlineUsers, chatPartner,
     setAppState: handleStateChange, setStudentProfile: updateStudentProfile, setGeneratedQuiz, setQuizSource, setAvatarState, setChatHistory, setScore: updateScore, setStreak, setProgressReport, setUserAnswers, setQuizScore, setQuizResults, setLastUploadedFiles, setQuizCustomization, setPracticeProblem, setUserPracticeAnswer, setProblemFeedback, setQuizHistory, setSelectedQuizAttempt, setTheme: handleThemeChange, setIsSubmitting, setSubmissionError,
-    startApp: handleStartApp, startLesson: handleStartLesson, startPracticeSession: handleStartPracticeSession, startSolveIssue: handleStartSolveIssue, startVideoGeneration: handleStartVideoGeneration, startGlobalChat: handleStartGlobalChat, onQuestionsGenerated: handleQuestionsGenerated, generateReport: handleGenerateReport, handleSubmitQuiz: handleSubmitQuiz, regenerateQuiz: handleRegenerateQuiz, logout: handleLogout, addLearningModule
-  }), [appState, studentProfile, generatedQuiz, quizSource, avatarState, chatHistory, score, streak, progressReport, userAnswers, quizScore, quizResults, lastUploadedFiles, quizCustomization, learningModules, completedModules, lastModuleCompleted, practiceProblem, userPracticeAnswer, problemFeedback, user, quizHistory, selectedQuizAttempt, theme, isSubmitting, submissionError, onlineUsers, chatPartner, handleStateChange, updateStudentProfile, updateScore, handleThemeChange, handleStartApp, handleStartLesson, handleStartPracticeSession, handleStartSolveIssue, handleStartVideoGeneration, handleStartGlobalChat, handleQuestionsGenerated, handleGenerateReport, handleSubmitQuiz, handleRegenerateQuiz, handleLogout, addLearningModule]);
+    startApp: handleStartApp, startLesson: handleStartLesson, startPracticeSession: handleStartPracticeSession, startSolveIssue: handleStartSolveIssue, startVideoGeneration: handleStartVideoGeneration, startGlobalChat: handleStartGlobalChat, onQuestionsGenerated: handleQuestionsGenerated, generateReport: handleGenerateReport, handleSubmitQuiz: handleSubmitQuiz, regenerateQuiz: handleRegenerateQuiz, logout: handleLogout, addLearningModule, removeLearningModule
+  }), [appState, studentProfile, generatedQuiz, quizSource, avatarState, chatHistory, score, streak, progressReport, userAnswers, quizScore, quizResults, lastUploadedFiles, quizCustomization, learningModules, completedModules, lastModuleCompleted, practiceProblem, userPracticeAnswer, problemFeedback, user, quizHistory, selectedQuizAttempt, theme, isSubmitting, submissionError, onlineUsers, chatPartner, handleStateChange, updateStudentProfile, updateScore, handleThemeChange, handleStartApp, handleStartLesson, handleStartPracticeSession, handleStartSolveIssue, handleStartVideoGeneration, handleStartGlobalChat, handleQuestionsGenerated, handleGenerateReport, handleSubmitQuiz, handleRegenerateQuiz, handleLogout, addLearningModule, removeLearningModule]);
 
   if (!isSupabaseConfigured) {
     return (
@@ -493,7 +525,8 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-background)] font-sans flex flex-col p-2 md:p-4">
+    <div className={`min-h-screen bg-[var(--color-background)] font-sans flex flex-col p-2 md:p-4 ${isOffline ? 'pt-14' : ''}`}>
+      {isOffline && <OfflineBanner />}
       <header className="w-full flex items-center justify-between p-4 rounded-xl bg-[var(--color-surface)]/50 mb-4 no-print shadow-lg border border-white/5 backdrop-blur-md">
         <div className="flex items-center gap-3">
           <SparklesIcon className="w-10 h-10 text-[var(--color-primary)] animate-pulse" />

@@ -19,6 +19,7 @@ import { ShoppingBagIcon } from './icons/ShoppingBagIcon';
 import { useSoundEffects } from '../hooks/useSoundEffects';
 import TopicPerformanceChart from './TopicPerformanceChart';
 import { getQuizHistory } from '../services/databaseService';
+import { SkeletonActivityItem } from './SkeletonCard';
 
 interface DashboardProps {
     context: AppContextType;
@@ -28,12 +29,20 @@ const Dashboard: React.FC<DashboardProps> = ({ context }) => {
     const { user, studentProfile, setAppState, startLesson, startPracticeSession, startSolveIssue, startVideoGeneration, startGlobalChat, learningModules, completedModules } = context;
     const { playHoverSound } = useSoundEffects();
     const [recentQuizzes, setRecentQuizzes] = useState<QuizAttempt[]>([]);
+    const [isLoadingRecent, setIsLoadingRecent] = useState(true);
 
     useEffect(() => {
         const fetchRecent = async () => {
             if (user) {
-                const history = await getQuizHistory(user.id);
-                setRecentQuizzes(history.slice(0, 3));
+                setIsLoadingRecent(true);
+                try {
+                    const history = await getQuizHistory(user.id);
+                    setRecentQuizzes(history.slice(0, 3));
+                } finally {
+                    setIsLoadingRecent(false);
+                }
+            } else {
+                setIsLoadingRecent(false);
             }
         };
         fetchRecent();
@@ -75,6 +84,7 @@ const Dashboard: React.FC<DashboardProps> = ({ context }) => {
                                 <p className="text-white/95 text-xl mb-6 leading-relaxed">{getTutorTip()}</p>
                                 <button
                                     onClick={startLesson}
+                                    onMouseEnter={playHoverSound}
                                     className="group/btn px-8 py-4 bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 text-gray-900 rounded-2xl font-black text-lg hover:scale-110 transition-all shadow-2xl hover:shadow-yellow-500/50 animate-button-glow relative overflow-hidden"
                                 >
                                     <span className="relative z-10 flex items-center gap-2">
@@ -128,7 +138,7 @@ const Dashboard: React.FC<DashboardProps> = ({ context }) => {
 
             {/* Stats Cards with Enhanced Glassmorphism */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div className="relative group bg-gradient-to-br from-blue-500/30 to-cyan-500/30 backdrop-blur-md p-8 rounded-3xl border-2 border-white/30 shadow-2xl hover:scale-105 hover:shadow-blue-500/50 transition-all duration-300 animate-slide-bounce overflow-hidden">
+                <div onMouseEnter={playHoverSound} className="relative group bg-gradient-to-br from-blue-500/30 to-cyan-500/30 backdrop-blur-md p-8 rounded-3xl border-2 border-white/30 shadow-2xl hover:scale-105 hover:shadow-blue-500/50 transition-all duration-300 animate-slide-bounce overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     <div className="text-center relative z-10">
                         <div className="text-5xl font-black bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent animate-neon-pulse drop-shadow-lg">
@@ -138,7 +148,7 @@ const Dashboard: React.FC<DashboardProps> = ({ context }) => {
                     </div>
                     <div className="absolute top-2 right-2 w-12 h-12 bg-blue-400/20 rounded-full blur-xl group-hover:scale-150 transition-transform"></div>
                 </div>
-                <div className="relative group bg-gradient-to-br from-orange-500/30 to-red-500/30 backdrop-blur-md p-8 rounded-3xl border-2 border-white/30 shadow-2xl hover:scale-105 hover:shadow-orange-500/50 transition-all duration-300 animate-slide-bounce overflow-hidden" style={{ animationDelay: '0.1s' }}>
+                <div onMouseEnter={playHoverSound} className="relative group bg-gradient-to-br from-orange-500/30 to-red-500/30 backdrop-blur-md p-8 rounded-3xl border-2 border-white/30 shadow-2xl hover:scale-105 hover:shadow-orange-500/50 transition-all duration-300 animate-slide-bounce overflow-hidden" style={{ animationDelay: '0.1s' }}>
                     <div className="absolute inset-0 bg-gradient-to-br from-orange-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     <div className="text-center relative z-10">
                         <div className="text-5xl font-black bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent animate-neon-pulse drop-shadow-lg">
@@ -148,7 +158,7 @@ const Dashboard: React.FC<DashboardProps> = ({ context }) => {
                     </div>
                     <div className="absolute top-2 right-2 w-12 h-12 bg-orange-400/20 rounded-full blur-xl group-hover:scale-150 transition-transform"></div>
                 </div>
-                <div className="relative group bg-gradient-to-br from-purple-500/30 to-pink-500/30 backdrop-blur-md p-8 rounded-3xl border-2 border-white/30 shadow-2xl hover:scale-105 hover:shadow-purple-500/50 transition-all duration-300 animate-slide-bounce overflow-hidden" style={{ animationDelay: '0.2s' }}>
+                <div onMouseEnter={playHoverSound} className="relative group bg-gradient-to-br from-purple-500/30 to-pink-500/30 backdrop-blur-md p-8 rounded-3xl border-2 border-white/30 shadow-2xl hover:scale-105 hover:shadow-purple-500/50 transition-all duration-300 animate-slide-bounce overflow-hidden" style={{ animationDelay: '0.2s' }}>
                     <div className="absolute inset-0 bg-gradient-to-br from-purple-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     <div className="text-center relative z-10">
                         <div className="text-3xl font-black bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent drop-shadow-lg">
@@ -160,141 +170,40 @@ const Dashboard: React.FC<DashboardProps> = ({ context }) => {
                 </div>
             </div>
 
-            {/* Main Action Grid - 4D Hypercube Style */}
+            {/* Main Action Grid - Animated Style */}
             <div className="mb-6">
                 <h2 className="text-2xl font-black text-white mb-4 flex items-center gap-2">
                     <span className="animate-wiggle">✨</span> Quick Actions
                 </h2>
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4 md:gap-6">
-                    <ActionCard3D
-                        icon={<BookOpenIcon className="w-10 h-10" />}
-                        label="Learn"
-                        emoji="📖"
-                        gradient="from-blue-600 to-cyan-600"
-                        onClick={startLesson}
-                        onHover={playHoverSound}
-                    />
-                    <ActionCard3D
-                        icon={<SparklesIcon className="w-10 h-10" />}
-                        label="AI Flashcards"
-                        emoji="✨"
-                        gradient="from-pink-600 to-rose-500"
-                        onClick={() => setAppState(AppState.FLASHCARDS)}
-                        onHover={playHoverSound}
-                    />
-                    <ActionCard3D
-                        icon={<UploadIcon className="w-10 h-10" />}
-                        label="Quiz"
-                        emoji="📝"
-                        gradient="from-green-600 to-emerald-600"
-                        onClick={handleStartQuizGeneration}
-                        onHover={playHoverSound}
-                    />
-                    <ActionCard3D
-                        icon={<LightBulbIcon className="w-10 h-10" />}
-                        label="Practice"
-                        emoji="💡"
-                        gradient="from-yellow-600 to-orange-600"
-                        onClick={startPracticeSession}
-                        onHover={playHoverSound}
-                    />
-                    <ActionCard3D
-                        icon={<BeakerIcon className="w-10 h-10" />}
-                        label="Solve"
-                        emoji="🧪"
-                        gradient="from-purple-600 to-pink-600"
-                        onClick={startSolveIssue}
-                        onHover={playHoverSound}
-                    />
-                    <ActionCard3D
-                        icon={<VideoCameraIcon className="w-10 h-10" />}
-                        label="Videos"
-                        emoji="🎬"
-                        gradient="from-red-600 to-rose-600"
-                        onClick={startVideoGeneration}
-                        onHover={playHoverSound}
-                    />
-                    <ActionCard3D
-                        icon={<MicrophoneIcon className="w-10 h-10" />}
-                        label="Podcastify"
-                        emoji="🎙️"
-                        gradient="from-cyan-600 to-blue-800"
-                        onClick={() => setAppState(AppState.PODCASTIFY)}
-                        onHover={playHoverSound}
-                    />
-                    <ActionCard3D
-                        icon={<UsersIcon className="w-10 h-10" />}
-                        label="Chat"
-                        emoji="💬"
-                        gradient="from-indigo-600 to-blue-600"
-                        onClick={startGlobalChat}
-                        onHover={playHoverSound}
-                    />
-                    <ActionCard3D
-                        icon={<BeakerIcon className="w-10 h-10" />}
-                        label="Math Helper"
-                        emoji="🧮"
-                        gradient="from-cyan-600 to-teal-600"
-                        onClick={() => setAppState(AppState.MATH_MASTERY)}
-                        onHover={playHoverSound}
-                    />
-                    <ActionCard3D
-                        icon={<CalendarIcon className="w-10 h-10" />}
-                        label="Plan"
-                        emoji="📅"
-                        gradient="from-orange-600 to-amber-600"
-                        onClick={() => setAppState(AppState.STUDY_PLAN)}
-                        onHover={playHoverSound}
-                    />
-                    <ActionCard3D
-                        icon={<ChartBarIcon className="w-10 h-10" />}
-                        label="Analytics"
-                        emoji="📊"
-                        gradient="from-pink-600 to-fuchsia-600"
-                        onClick={() => setAppState(AppState.ANALYTICS)}
-                        onHover={playHoverSound}
-                    />
-
-                    <ActionCard3D
-                        icon={<BookOpenIcon className="w-10 h-10" />}
-                        label="Book Quiz"
-                        emoji="📚"
-                        gradient="from-indigo-600 to-blue-700"
-                        onClick={() => setAppState(AppState.BOOK_QUIZ)}
-                        onHover={playHoverSound}
-                    />
-                    <ActionCard3D
-                        icon={<UsersIcon className="w-10 h-10" />}
-                        label="Challenges"
-                        emoji="🏆"
-                        gradient="from-teal-600 to-cyan-600"
-                        onClick={() => setAppState(AppState.MULTIPLAYER_CHALLENGE)}
-                        onHover={playHoverSound}
-                    />
-                    <ActionCard3D
-                        icon={<GlobeAltIcon className="w-10 h-10" />}
-                        label="Time Travel"
-                        emoji="🕰️"
-                        gradient="from-fuchsia-600 to-purple-800"
-                        onClick={() => setAppState(AppState.TIME_TRAVEL)}
-                        onHover={playHoverSound}
-                    />
-                    <ActionCard3D
-                        icon={<ShoppingBagIcon className="w-10 h-10" />}
-                        label="Store"
-                        emoji="🛍️"
-                        gradient="from-yellow-500 to-amber-600"
-                        onClick={() => setAppState(AppState.POINT_SHOP)}
-                        onHover={playHoverSound}
-                    />
-                    <ActionCard3D
-                        icon={<span className="text-4xl">🕵️‍♂️</span>}
-                        label="Patterns"
-                        emoji="🔍"
-                        gradient="from-cyan-700 to-blue-900"
-                        onClick={() => setAppState(AppState.PATTERN_DETECTIVE)}
-                        onHover={playHoverSound}
-                    />
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4 md:gap-5">
+                    {[
+                        { icon: <BookOpenIcon className="w-10 h-10" />, label: "Learn", emoji: "📖", gradient: "from-blue-600 to-cyan-600", onClick: startLesson },
+                        { icon: <UploadIcon className="w-10 h-10" />, label: "Quiz", emoji: "📝", gradient: "from-green-600 to-emerald-600", onClick: handleStartQuizGeneration },
+                        { icon: <LightBulbIcon className="w-10 h-10" />, label: "Practice", emoji: "💡", gradient: "from-yellow-600 to-orange-600", onClick: startPracticeSession },
+                        { icon: <BeakerIcon className="w-10 h-10" />, label: "Solve", emoji: "🧪", gradient: "from-purple-600 to-pink-600", onClick: startSolveIssue },
+                        { icon: <VideoCameraIcon className="w-10 h-10" />, label: "Videos", emoji: "🎬", gradient: "from-red-600 to-rose-600", onClick: startVideoGeneration },
+                        { icon: <MicrophoneIcon className="w-10 h-10" />, label: "Podcastify", emoji: "🎙️", gradient: "from-cyan-600 to-blue-800", onClick: () => setAppState(AppState.PODCASTIFY) },
+                        { icon: <UsersIcon className="w-10 h-10" />, label: "Chat", emoji: "💬", gradient: "from-indigo-600 to-blue-600", onClick: startGlobalChat },
+                        { icon: <BeakerIcon className="w-10 h-10" />, label: "Math Helper", emoji: "🧮", gradient: "from-cyan-600 to-teal-600", onClick: () => setAppState(AppState.MATH_MASTERY) },
+                        { icon: <CalendarIcon className="w-10 h-10" />, label: "Plan", emoji: "📅", gradient: "from-orange-600 to-amber-600", onClick: () => setAppState(AppState.STUDY_PLAN) },
+                        { icon: <ChartBarIcon className="w-10 h-10" />, label: "Analytics", emoji: "📊", gradient: "from-pink-600 to-fuchsia-600", onClick: () => setAppState(AppState.ANALYTICS) },
+                        { icon: <BookOpenIcon className="w-10 h-10" />, label: "Book Quiz", emoji: "📚", gradient: "from-indigo-600 to-blue-700", onClick: () => setAppState(AppState.BOOK_QUIZ) },
+                        { icon: <UsersIcon className="w-10 h-10" />, label: "Challenges", emoji: "🏆", gradient: "from-teal-600 to-cyan-600", onClick: () => setAppState(AppState.MULTIPLAYER_CHALLENGE) },
+                        { icon: <GlobeAltIcon className="w-10 h-10" />, label: "Time Travel", emoji: "🕰️", gradient: "from-fuchsia-600 to-purple-800", onClick: () => setAppState(AppState.TIME_TRAVEL) },
+                        { icon: <ShoppingBagIcon className="w-10 h-10" />, label: "Store", emoji: "🛍️", gradient: "from-yellow-500 to-amber-600", onClick: () => setAppState(AppState.POINT_SHOP) },
+                        { icon: <span className="text-4xl">🕵️‍♂️</span>, label: "Patterns", emoji: "🔍", gradient: "from-cyan-700 to-blue-900", onClick: () => setAppState(AppState.PATTERN_DETECTIVE) },
+                    ].map((action, index) => (
+                        <ActionCardBento
+                            key={action.label}
+                            index={index}
+                            icon={action.icon}
+                            label={action.label}
+                            emoji={action.emoji}
+                            gradient={action.gradient}
+                            onClick={action.onClick}
+                            onHover={playHoverSound}
+                        />
+                    ))}
                 </div>
             </div>
 
@@ -329,6 +238,7 @@ const Dashboard: React.FC<DashboardProps> = ({ context }) => {
                                     <div
                                         key={module.id}
                                         onClick={() => setAppState(AppState.BOOK_QUIZ)}
+                                        onMouseEnter={playHoverSound}
                                         className={`group relative bg-slate-700/30 hover:bg-slate-700/50 p-4 rounded-xl border ${isCompleted ? 'border-green-500/50' : isUnlocked ? 'border-slate-600/50 hover:border-yellow-500/50' : 'border-white/5 opacity-50'} transition-all cursor-pointer flex items-center justify-between`}
                                     >
                                         <div className="flex items-center gap-4">
@@ -364,10 +274,16 @@ const Dashboard: React.FC<DashboardProps> = ({ context }) => {
                         <ClockIcon className="w-6 h-6 text-cyan-400 animate-wiggle" />
                         Recent Activity
                     </h3>
-                    {recentQuizzes.length > 0 ? (
+                    {isLoadingRecent ? (
+                        <div className="space-y-3">
+                            <SkeletonActivityItem />
+                            <SkeletonActivityItem />
+                            <SkeletonActivityItem />
+                        </div>
+                    ) : recentQuizzes.length > 0 ? (
                         <div className="space-y-3">
                             {recentQuizzes.map((q) => (
-                                <div key={q.id} className="bg-slate-700/30 p-4 rounded-xl border border-slate-600/50 hover:border-cyan-500/50 transition-all hover:scale-102">
+                                <div key={q.id} onMouseEnter={playHoverSound} className="bg-slate-700/30 p-4 rounded-xl border border-slate-600/50 hover:border-cyan-500/50 transition-all hover:scale-102">
                                     <div className="flex justify-between items-center">
                                         <span className="text-white font-semibold">{q.subject} - Grade {q.grade}</span>
                                         <span className={`px-3 py-1 rounded-full text-xs font-bold ${q.score >= 80 ? 'bg-green-500/20 text-green-400' : 'bg-orange-500/20 text-orange-400'}`}>
@@ -389,161 +305,47 @@ const Dashboard: React.FC<DashboardProps> = ({ context }) => {
     );
 };
 
-// 4D Hypercube (Tesseract) Component
-const ActionCard3D: React.FC<{
+// Animated Card Style - Staggered entrance, float, shimmer, glow
+const ActionCardBento: React.FC<{
+    index: number;
     icon: React.ReactNode;
     label: string;
     emoji: string;
     gradient: string;
     onClick: () => void;
     onHover: () => void
-}> = ({ icon, label, emoji, gradient, onClick, onHover }) => {
-    const [isSpinning, setIsSpinning] = useState(false);
-
-    const handleClick = () => {
-        setIsSpinning(true);
-        onHover();
-
-        // Spin the hypercube through 4D space
-        setTimeout(() => {
-            onClick();
-        }, 1200); // Navigate after hypercube animation
-    };
-
+}> = ({ index, icon, label, emoji, gradient, onClick, onHover }) => {
     return (
-        <div
-            className="relative aspect-square cursor-pointer group"
-            style={{ perspective: '1200px' }}
-            onClick={handleClick}
+        <button
+            type="button"
+            onClick={onClick}
+            onMouseEnter={onHover}
+            className="group relative aspect-square w-full rounded-2xl overflow-hidden transition-all duration-500 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-slate-900 opacity-0 animate-card-enter"
+            style={{
+                animationDelay: `${index * 45}ms`,
+                animationFillMode: 'forwards',
+            }}
         >
-            {/* Outer hypercube layer */}
-            <div
-                className="absolute inset-0 transition-all duration-1000"
-                style={{
-                    transformStyle: 'preserve-3d',
-                    transform: isSpinning
-                        ? 'rotateX(720deg) rotateY(720deg) rotateZ(360deg) scale(1.2)'
-                        : 'rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(1)',
-                    transition: isSpinning ? 'transform 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55)' : 'transform 0.5s ease-out'
-                }}
-            >
-                {/* Main front face with content */}
-                <div
-                    className={`absolute inset-0 bg-gradient-to-br ${gradient} rounded-3xl p-6 flex flex-col items-center justify-center text-white shadow-2xl border-4 border-white/40 overflow-hidden backdrop-blur-sm`}
-                    style={{
-                        backfaceVisibility: 'hidden',
-                        transform: 'translateZ(80px)',
-                        boxShadow: '0 0 40px rgba(255,255,255,0.3), inset 0 0 40px rgba(255,255,255,0.1)'
-                    }}
-                >
-                    {/* Animated grid background */}
-                    <div className="absolute inset-0 opacity-20">
-                        <div className="absolute inset-0" style={{
-                            backgroundImage: 'linear-gradient(white 1px, transparent 1px), linear-gradient(90deg, white 1px, transparent 1px)',
-                            backgroundSize: '20px 20px'
-                        }}></div>
-                    </div>
-
-                    {/* Wireframe overlay */}
-                    <svg className="absolute inset-0 w-full h-full opacity-30 group-hover:opacity-60 transition-opacity" style={{ pointerEvents: 'none' }}>
-                        <line x1="0" y1="0" x2="100%" y2="0" stroke="white" strokeWidth="2" />
-                        <line x1="100%" y1="0" x2="100%" y2="100%" stroke="white" strokeWidth="2" />
-                        <line x1="100%" y1="100%" x2="0" y2="100%" stroke="white" strokeWidth="2" />
-                        <line x1="0" y1="100%" x2="0" y2="0" stroke="white" strokeWidth="2" />
-                        <line x1="0" y1="0" x2="100%" y2="100%" stroke="white" strokeWidth="1" opacity="0.5" />
-                        <line x1="100%" y1="0" x2="0" y2="100%" stroke="white" strokeWidth="1" opacity="0.5" />
-                    </svg>
-
-                    {/* Pulsing energy rings */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-full h-full border-4 border-white/20 rounded-full animate-ping" style={{ animationDuration: '3s' }}></div>
-                        <div className="absolute w-3/4 h-3/4 border-4 border-white/30 rounded-full animate-ping" style={{ animationDuration: '2s', animationDelay: '0.5s' }}></div>
-                    </div>
-
-                    {/* Emoji Badge with glow */}
-                    <div className="absolute -top-3 -right-3 text-4xl animate-bounce z-20 drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]">{emoji}</div>
-
-                    {/* Icon with holographic effect */}
-                    <div className="mb-3 transform group-hover:scale-125 group-hover:rotate-12 transition-all duration-500 relative z-10 drop-shadow-2xl">
-                        {icon}
-                    </div>
-
-                    {/* Label with neon glow */}
-                    <span className="text-sm font-black text-center uppercase tracking-widest relative z-10 drop-shadow-[0_0_10px_rgba(255,255,255,0.8)] group-hover:text-yellow-200 transition-colors">
-                        {label}
-                    </span>
-
-                    {/* Scanning line effect */}
-                    <div className="absolute inset-0 overflow-hidden">
-                        <div className="absolute w-full h-1 bg-gradient-to-r from-transparent via-white to-transparent opacity-50" style={{
-                            animation: 'scan 2s linear infinite'
-                        }}></div>
-                    </div>
-                </div>
-
-                {/* Inner cube layer (4D projection) */}
-                <div
-                    className="absolute inset-[15%] transition-all duration-700"
-                    style={{
-                        transformStyle: 'preserve-3d',
-                        transform: isSpinning
-                            ? 'rotateX(-360deg) rotateY(-360deg) translateZ(40px)'
-                            : 'rotateX(0deg) rotateY(0deg) translateZ(40px)',
-                        transition: isSpinning ? 'transform 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55)' : 'transform 0.5s ease-out'
-                    }}
-                >
-                    <div
-                        className={`absolute inset-0 bg-gradient-to-br ${gradient} rounded-2xl border-2 border-white/60 opacity-60`}
-                        style={{
-                            backfaceVisibility: 'hidden',
-                            boxShadow: '0 0 30px rgba(255,255,255,0.5)'
-                        }}
-                    />
-                </div>
-
-                {/* Wireframe edges connecting dimensions */}
-                <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ transform: 'translateZ(100px)' }}>
-                    <line x1="10%" y1="10%" x2="90%" y2="10%" stroke="white" strokeWidth="3" opacity="0.6" className="animate-pulse" />
-                    <line x1="90%" y1="10%" x2="90%" y2="90%" stroke="white" strokeWidth="3" opacity="0.6" className="animate-pulse" style={{ animationDelay: '0.2s' }} />
-                    <line x1="90%" y1="90%" x2="10%" y2="90%" stroke="white" strokeWidth="3" opacity="0.6" className="animate-pulse" style={{ animationDelay: '0.4s' }} />
-                    <line x1="10%" y1="90%" x2="10%" y2="10%" stroke="white" strokeWidth="3" opacity="0.6" className="animate-pulse" style={{ animationDelay: '0.6s' }} />
-                </svg>
-
-                {/* Particle field */}
-                <div className="absolute inset-0 pointer-events-none">
-                    {[...Array(8)].map((_, i) => (
-                        <div
-                            key={i}
-                            className="absolute w-1 h-1 bg-white rounded-full animate-float"
-                            style={{
-                                top: `${Math.random() * 100}%`,
-                                left: `${Math.random() * 100}%`,
-                                animationDelay: `${i * 0.3}s`,
-                                animationDuration: `${3 + Math.random() * 2}s`,
-                                opacity: 0.6
-                            }}
-                        />
-                    ))}
-                </div>
+            {/* Gradient background */}
+            <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
+            <div className="absolute inset-0 bg-gradient-to-br from-white/15 via-transparent to-transparent" />
+            {/* Shimmer sweep on hover */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out bg-gradient-to-r from-transparent via-white/40 to-transparent skew-x-[-20deg] w-1/2" />
             </div>
-
-            {/* Outer glow aura */}
-            <div
-                className={`absolute inset-0 bg-gradient-to-br ${gradient} rounded-3xl blur-2xl opacity-0 group-hover:opacity-70 transition-all duration-500 -z-10`}
-                style={{
-                    transform: isSpinning ? 'scale(1.5)' : 'scale(1)',
-                    transition: 'all 0.5s ease-out'
-                }}
-            ></div>
-
-            {/* Holographic shimmer overlay */}
-            <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
-                <div
-                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"
-                    style={{ transform: 'skewX(-20deg)' }}
-                ></div>
+            {/* Glow pulse on hover - inner div for animation */}
+            <div className="absolute inset-0 rounded-2xl border-2 border-transparent group-hover:border-white/40 transition-colors duration-300 pointer-events-none animate-card-glow" />
+            {/* Content - subtle float animation */}
+            <div className="relative z-10 flex flex-col items-center justify-center h-full p-4 animate-card-float">
+                <span className="absolute top-2 right-2 text-2xl opacity-90 group-hover:scale-110 transition-transform duration-300">{emoji}</span>
+                <div className="mb-2 text-white drop-shadow-lg group-hover:scale-125 group-hover:rotate-6 transition-all duration-300">
+                    {icon}
+                </div>
+                <span className="text-xs font-bold text-white uppercase tracking-wider text-center drop-shadow-md group-hover:text-yellow-100 transition-colors">
+                    {label}
+                </span>
             </div>
-        </div>
+        </button>
     );
 };
 

@@ -3,6 +3,7 @@ import { AppContextType } from '../types';
 import { TrophyIcon } from './icons/TrophyIcon';
 import { ArrowLeftOnRectangleIcon } from './icons/ArrowLeftOnRectangleIcon';
 import ThemeSwitcher from './ThemeSwitcher';
+import { useSoundEffects } from '../hooks/useSoundEffects';
 
 interface GamificationHeaderProps {
     context: AppContextType;
@@ -10,6 +11,7 @@ interface GamificationHeaderProps {
 
 const GamificationHeader: React.FC<GamificationHeaderProps> = ({ context }) => {
     const { score, streak, logout } = context;
+    const { playHoverSound } = useSoundEffects();
 
     return (
         <div className="flex items-center gap-4 bg-[var(--color-surface-light)]/50 px-4 py-2 rounded-lg">
@@ -28,7 +30,7 @@ const GamificationHeader: React.FC<GamificationHeaderProps> = ({ context }) => {
              <div className="w-px h-6 bg-[var(--color-border)]"></div>
              <ThemeSwitcher context={context} />
              <div className="w-px h-6 bg-[var(--color-border)]"></div>
-             <button onClick={logout} className="flex items-center gap-2 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors" title="Logout">
+             <button onClick={logout} onMouseEnter={playHoverSound} className="flex items-center gap-2 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors" title="Logout">
                 <ArrowLeftOnRectangleIcon className="w-6 h-6" />
              </button>
         </div>

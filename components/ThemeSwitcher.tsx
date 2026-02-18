@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { AppContextType } from '../types';
 import { PaintBrushIcon } from './icons/PaintBrushIcon';
 import { CheckIcon } from './icons/CheckIcon';
+import { useSoundEffects } from '../hooks/useSoundEffects';
 
 interface ThemeSwitcherProps {
     context: AppContextType;
@@ -18,6 +19,7 @@ const themes = [
 
 const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({ context }) => {
     const { theme, setTheme } = context;
+    const { playHoverSound } = useSoundEffects();
     const [isOpen, setIsOpen] = useState(false);
     const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -40,6 +42,7 @@ const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({ context }) => {
         <div className="relative" ref={wrapperRef}>
             <button 
                 onClick={() => setIsOpen(!isOpen)}
+                onMouseEnter={playHoverSound}
                 className="flex items-center gap-2 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
                 title="Change Theme"
             >
@@ -52,6 +55,7 @@ const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({ context }) => {
                             <button
                                 key={t.id}
                                 onClick={() => handleThemeSelect(t.id)}
+                                onMouseEnter={playHoverSound}
                                 className="w-full text-left flex items-center justify-between px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-light)] rounded-md transition-colors"
                             >
                                 <span className="flex items-center gap-3">
