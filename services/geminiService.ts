@@ -159,7 +159,7 @@ export async function extractChaptersFromFile(
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-2.0-flash-exp',
       contents: [{ parts: [imagePart, { text: prompt }] }],
       config: {
         responseMimeType: "application/json",
