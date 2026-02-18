@@ -64,13 +64,31 @@ const BookQuizView: React.FC<BookQuizViewProps> = ({ context }) => {
         if (!files || files.length === 0 || !studentProfile) return;
 
         const file = files[0];
+
+        // Save the file as a single module immediately (Fast Update)
+        const newModule: any = {
+            id: `upload-${Date.now()}`,
+            title: file.name.replace(/\.[^/.]+$/, ""), // Remove extension
+            subject: selectedFilterSubject,
+            description: "Uploaded Syllabus (Click 'Detect Chapters' to analyze)",
+            requiredTopics: [],
+            file: file
+        };
+
+        addLearningModule(newModule);
+
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    // New function to handle on-demand analysis
+    const handleAnalyzeChapters = async (module: any) => {
         setIsGenerating(true);
         setSelectedChapter(`Analyzing Syllabus...`);
         setAvatarState(AvatarState.THINKING);
 
         try {
             // New Logic: Extract chapters instead of treating file as one blob
-            const chapters = await extractChaptersFromFile(file, studentProfile);
+            const chapters = await extractChaptersFromFile(module.file, studentProfile);
 
             // Add each extracted chapter as a learning module
             chapters.forEach((chapter, index) => {
@@ -80,20 +98,23 @@ const BookQuizView: React.FC<BookQuizViewProps> = ({ context }) => {
                     subject: selectedFilterSubject,
                     description: chapter.description,
                     requiredTopics: chapter.keyPoints || [],
-                    file: file, // All modules share the original file reference
+                    file: module.file, // All modules share the original file reference
                     focusContext: chapter.title // IMPORTANT: This tells the quiz generator to focus on this chapter
                 };
                 addLearningModule(newModule);
             });
 
+            // Note: We don't explicitly remove the original "Raw" module here because the user might still want it.
+            // Or we could trigger a cleanup if we had a removeModule function.
+            // For now, let's just append the detected chapters.
+
         } catch (error) {
             console.error("Failed to process uploaded file:", error);
-            alert("Failed to read the syllabus file. Please try again.");
+            alert("Failed to analyze the syllabus file. Please try again.");
         } finally {
             setIsGenerating(false);
             setSelectedChapter(null);
             setAvatarState(AvatarState.IDLE);
-            if (fileInputRef.current) fileInputRef.current.value = '';
         }
     };
 
@@ -205,7 +226,11 @@ const BookQuizView: React.FC<BookQuizViewProps> = ({ context }) => {
                     </div>
                     <div className="max-w-xs">
                         <h3 className="text-xl font-bold text-white mb-2">Preparing Your Quiz</h3>
-                        <p className="text-slate-400 text-sm">Our AI is reading through "<span className="text-indigo-400 font-bold">{selectedChapter}</span>" to create the perfect challenge for you...</p>
+                        <p className="text-slate-400 text-sm">
+                            {selectedChapter === 'Analyzing Syllabus...'
+                                ? "Reading through your file to identify chapters..."
+                                : <>Our AI is reading through "<span className="text-indigo-400 font-bold">{selectedChapter}</span>" to create the perfect challenge for you...</>}
+                        </p>
                     </div>
                 </div>
             ) : (
@@ -222,8 +247,7 @@ const BookQuizView: React.FC<BookQuizViewProps> = ({ context }) => {
                             filteredModules.map((module, index) => (
                                 <div
                                     key={module.id}
-                                    className="group relative bg-slate-800/80 hover:bg-slate-700/80 rounded-3xl border border-white/10 hover:border-indigo-500/50 p-6 transition-all duration-300 hover:shadow-2xl hover:shadow-indigo-500/10 cursor-pointer flex flex-col h-full"
-                                    onClick={() => handleStartQuiz(module)}
+                                    className="group relative bg-slate-800/80 hover:bg-slate-700/80 rounded-3xl border border-white/10 hover:border-indigo-500/50 p-6 transition-all duration-300 hover:shadow-2xl hover:shadow-indigo-500/10 flex flex-col h-full"
                                 >
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="w-10 h-10 bg-indigo-500/10 rounded-xl flex items-center justify-center group-hover:bg-indigo-500 transition-colors">
@@ -234,7 +258,10 @@ const BookQuizView: React.FC<BookQuizViewProps> = ({ context }) => {
                                         </div>
                                     </div>
 
-                                    <h3 className="text-lg font-black text-white mb-2 leading-tight group-hover:text-indigo-400 transition-colors">
+                                    <h3
+                                        className="text-lg font-black text-white mb-2 leading-tight group-hover:text-indigo-400 transition-colors cursor-pointer"
+                                        onClick={() => handleStartQuiz(module)}
+                                    >
                                         {module.title}
                                     </h3>
 
@@ -242,17 +269,34 @@ const BookQuizView: React.FC<BookQuizViewProps> = ({ context }) => {
                                         {module.description}
                                     </p>
 
-                                    <div className="flex items-center justify-between mt-auto">
-                                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                                            <ClockIcon className="w-3.5 h-3.5" />
-                                            10 Questions
-                                        </div>
-                                        <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-indigo-500 group-hover:translate-x-1 transition-all">
-                                            <div className="w-0 h-0 border-t-[4px] border-t-transparent border-l-[6px] border-l-slate-400 group-hover:border-l-white border-b-[4px] border-b-transparent ml-0.5"></div>
-                                        </div>
-                                    </div>
+                                    <div className="flex flex-col gap-2 mt-auto relative z-10">
+                                        <button
+                                            onClick={() => handleStartQuiz(module)}
+                                            className="w-full flex items-center justify-between px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500 rounded-xl text-indigo-300 hover:text-white transition-all text-xs font-bold uppercase tracking-wider group-hover:shadow-lg group-hover:shadow-indigo-500/20"
+                                        >
+                                            <span className="flex items-center gap-2">
+                                                <ClockIcon className="w-4 h-4" />
+                                                Start Quiz
+                                            </span>
+                                            <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center">
+                                                <div className="w-0 h-0 border-t-[3px] border-t-transparent border-l-[5px] border-l-current border-b-[3px] border-b-transparent ml-0.5"></div>
+                                            </div>
+                                        </button>
 
-                                    <div className="absolute inset-0 rounded-3xl border-2 border-transparent group-hover:border-indigo-500/20 pointer-events-none transition-all"></div>
+                                        {/* Show 'Analyze Chapters' button only for raw uploaded files that haven't been split yet */}
+                                        {module.file && !module.focusContext && (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleAnalyzeChapters(module);
+                                                }}
+                                                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-slate-700 hover:bg-teal-500 rounded-xl text-slate-300 hover:text-white transition-all text-xs font-bold uppercase tracking-wider border border-white/5 hover:border-teal-400/50"
+                                            >
+                                                <SparklesIcon className="w-4 h-4" />
+                                                Detect Chapters
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             ))
                         ) : (
