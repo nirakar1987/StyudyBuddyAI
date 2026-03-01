@@ -1157,3 +1157,76 @@ export async function generatePatternGame(
   }
 }
 
+// --- Homework Scanner (Photo-to-Solution) ---
+
+export interface HomeworkSolution {
+  detectedQuestion: string;
+  subject: string;
+  topic: string;
+  steps: { stepNumber: number; title: string; explanation: string; }[];
+  finalAnswer: string;
+  conceptTip: string;
+  practiceQuestion: string;
+  practiceAnswer: string;
+}
+
+export async function solveHomeworkFromImage(
+  file: File,
+  profile: StudentProfile
+): Promise<HomeworkSolution> {
+  const ai = getAiClient();
+  const imagePart = await fileToGenerativePart(file);
+
+  const prompt = `You are an expert tutor for Grade ${profile.grade} students studying ${profile.subject} (Indian CBSE/ICSE curriculum).
+
+TASK: Look at this homework/question image. Read the question carefully.
+
+INSTRUCTIONS:
+1. DETECT the exact question text from the image.
+2. IDENTIFY the subject and specific topic.
+3. SOLVE it step-by-step in a way a ${profile.grade}th grader can understand.
+4. Use simple language, analogies, and examples.
+5. Give a CONCEPT TIP — a quick trick or rule to remember.
+6. Create ONE practice question on the same topic (with its answer) so the student can try.
+
+BE ACCURATE: Show full mathematical working if it's a math problem. For science, explain the reasoning. For English/languages, explain grammar rules or meanings.`;
+
+  try {
+    const response = await withRetry(() => ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: [{ parts: [imagePart, { text: prompt }] }],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            detectedQuestion: { type: Type.STRING },
+            subject: { type: Type.STRING },
+            topic: { type: Type.STRING },
+            steps: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  stepNumber: { type: Type.NUMBER },
+                  title: { type: Type.STRING },
+                  explanation: { type: Type.STRING }
+                },
+                required: ["stepNumber", "title", "explanation"]
+              }
+            },
+            finalAnswer: { type: Type.STRING },
+            conceptTip: { type: Type.STRING },
+            practiceQuestion: { type: Type.STRING },
+            practiceAnswer: { type: Type.STRING }
+          },
+          required: ["detectedQuestion", "subject", "topic", "steps", "finalAnswer", "conceptTip", "practiceQuestion", "practiceAnswer"]
+        }
+      }
+    }));
+
+    return safeJsonParse<HomeworkSolution>(response.text, "Failed to analyze homework image.");
+  } catch (error) {
+    throw new Error(handleApiError(error));
+  }
+}

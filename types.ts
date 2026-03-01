@@ -43,6 +43,7 @@ export enum AppState {
   PATTERN_DETECTIVE,
   SCHOOL_PROJECTS,
   PARENT_NOTIFICATIONS,
+  HOMEWORK_SCANNER,
 }
 
 export enum AvatarState {
