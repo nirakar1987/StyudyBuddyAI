@@ -58,19 +58,27 @@ Deno.serve(async (req) => {
       fetch(`${TELEGRAM_API}${token}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: parentChatId, text }),
+        body: JSON.stringify({
+          chat_id: parentChatId,
+          text,
+          parse_mode: 'HTML'
+        }),
       })
     );
   }
 
   // 2. Send to global admin monitor
   if (adminChatId) {
-    const adminText = `🚨 GLOBAL MONITOR 🚨\nStudent: ${profile?.full_name || 'Anonymous'}\n\n${text}`;
+    const adminText = `🚨 <b>GLOBAL MONITOR</b> 🚨\nStudent: <b>${profile?.full_name || 'Anonymous'}</b>\n\n${text}`;
     sendPromises.push(
       fetch(`${TELEGRAM_API}${token}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: adminChatId, text: adminText }),
+        body: JSON.stringify({
+          chat_id: adminChatId,
+          text: adminText,
+          parse_mode: 'HTML'
+        }),
       })
     );
   }
