@@ -104,12 +104,21 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           contents: [{
             parts: [{
-              text: `You are an Educational Data Analyst. Here is the recent quiz performance of students: ${JSON.stringify(summaryData)}. 
-                     Please provide a concise summary (max 200 words) for the teacher on: 
-                     1. Overall performance trend.
-                     2. Key subjects/topics where students are struggling.
-                     3. One actionable recommendation. 
-                     Format output in clean, easy-to-read bullet points for a Telegram message.`
+              text: `You are an expert Educational Data Analyst and AI Assistant. 
+                     Analyze this student performance data: ${JSON.stringify(summaryData)}.
+                     
+                     STRICT FORMATTING RULES (CHATGPT STYLE):
+                     1. Use clear, BOLD headers for each section.
+                     2. Use bullet points for all observations.
+                     3. Use BOLD text for key metrics, subjects, or critical warnings.
+                     4. Keep it professional, structured, and concise. 
+                     5. NO conversational filler (e.g., skip "Here is the report" or "Hope this helps").
+                     6. Use Standard Markdown (*bold*, - bullets).
+                     
+                     SECTIONS TO INCLUDE:
+                     * PERFORMANCE TRENDS: Summarize how students are doing overall.
+                     * TOP PRIORITY TOPICS: Identify specific topics needing immediate attention.
+                     * STRATEGIC RECOMMENDATION: Provide one high-impact teaching strategy.`
             }]
           }]
         })
@@ -119,17 +128,17 @@ Deno.serve(async (req) => {
 
       if (!aiResponse.ok) {
         console.error('Gemini Error:', aiData);
-        await sendTelegram(token, chatId, `🤖 *AI Service Error*: [${aiResponse.status}] ${aiData.error?.message || 'Unknown error'}`);
+        await sendTelegram(token, chatId, `⚠️ *AI Service Error*\n\nStatus: ${aiResponse.status}\nMessage: ${aiData.error?.message || 'Unknown error'}`);
         return new Response('ok', { status: 200 });
       }
 
       const insightText = aiData.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!insightText) {
-        await sendTelegram(token, chatId, '🤖 Gemini returned empty results. Is the data too small?');
+        await sendTelegram(token, chatId, '🤖 Gemini returned empty results.');
         return new Response('ok', { status: 200 });
       }
 
-      await sendTelegram(token, chatId, `🧠 *AI Insights Report*\n\n${insightText}`);
+      await sendTelegram(token, chatId, `🚀 *STUDYBUDDY AI INSIGHTS*\n\n${insightText}`);
       return new Response('ok', { status: 200 });
     }
 
@@ -137,7 +146,7 @@ Deno.serve(async (req) => {
     if (text.startsWith('/start')) {
       const code = text.replace(/\/start\s*/i, '').trim();
       if (!code) {
-        await sendTelegram(token, chatId, '👋 Hi! To get StudyBuddy activity updates, enter the 6-digit code from your child\'s app: Profile → Parent notifications → Connect Telegram.');
+        await sendTelegram(token, chatId, '👋 *Welcome to StudyBuddy!*\n\nTo link your student\'s account:\n1. Open the app\n2. Go to *Profile* → *Parent Notifications*\n3. Enter the 6-digit code here.');
         return new Response('ok', { status: 200 });
       }
 
@@ -148,7 +157,7 @@ Deno.serve(async (req) => {
         .single();
 
       if (!row || new Date(row.expires_at) < new Date()) {
-        await sendTelegram(token, chatId, '❌ Invalid or expired code.');
+        await sendTelegram(token, chatId, '❌ *Invalid or Expired Code*\nPlease generate a new code in the app.');
         return new Response('ok', { status: 200 });
       }
 
@@ -158,12 +167,12 @@ Deno.serve(async (req) => {
         .eq('id', row.user_id);
 
       if (error) {
-        await sendTelegram(token, chatId, '❌ Something went wrong. Please try again.');
+        await sendTelegram(token, chatId, '❌ *Connection Error*\nPlease try again later.');
         return new Response('ok', { status: 200 });
       }
 
       await supabase.from('parent_link_codes').delete().eq('code', code);
-      await sendTelegram(token, chatId, '✅ You\'re linked!');
+      await sendTelegram(token, chatId, '✅ *Success!*\nYou are now linked. You will receive real-time updates on your student\'s progress.');
       return new Response('ok', { status: 200 });
     }
   } catch (err) {
@@ -173,10 +182,10 @@ Deno.serve(async (req) => {
   return new Response('ok', { status: 200 });
 });
 
-async function sendTelegram(token: string, chatId: number, text: string): Promise<void> {
+async function sendTelegram(token: string, chatId: number, text: string, parseMode: string = 'Markdown'): Promise<void> {
   await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, text }),
+    body: JSON.stringify({ chat_id: chatId, text, parse_mode: parseMode }),
   });
 }
