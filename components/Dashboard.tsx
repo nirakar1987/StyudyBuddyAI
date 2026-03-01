@@ -74,10 +74,10 @@ const Dashboard: React.FC<DashboardProps> = ({ context }) => {
                     <span className="text-4xl">📱</span>
                     <div>
                         <h3 className="text-lg font-bold text-white">Send activity to parent</h3>
-                        <p className="text-sm text-slate-300">Set up WhatsApp or Telegram. Parents can also sign in with their own account.</p>
+                        <p className="text-sm text-slate-300">Parents get updates automatically via Telegram when you complete a quiz or practice.</p>
                     </div>
                 </div>
-                <span className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm whitespace-nowrap">Set up WhatsApp / Telegram →</span>
+                <span className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm whitespace-nowrap">Set up automatic Telegram →</span>
             </div>
 
             {/* Hero Section with Animated Gradient */}

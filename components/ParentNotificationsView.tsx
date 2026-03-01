@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { AppContextType, AppState } from '../types';
 import { getProfile, createParentInviteCode } from '../services/databaseService';
 import { createParentLinkCode } from '../services/databaseService';
-import { getWhatsAppShareUrl, copyToClipboard } from '../services/parentNotificationService';
+import { copyToClipboard } from '../services/parentNotificationService';
 import { ArrowLeftOnRectangleIcon } from './icons/ArrowLeftOnRectangleIcon';
 import { useSoundEffects } from '../hooks/useSoundEffects';
 
@@ -13,8 +13,6 @@ const TELEGRAM_BOT_LINK = `https://t.me/${TELEGRAM_BOT_USERNAME}`;
 const ParentNotificationsView: React.FC<{ context: AppContextType }> = ({ context }) => {
   const { user, studentProfile, setStudentProfile, setAppState } = context;
   const { playHoverSound } = useSoundEffects();
-  const [parentPhone, setParentPhone] = useState(studentProfile?.parent_phone ?? '');
-  const [savingPhone, setSavingPhone] = useState(false);
   const [linkCode, setLinkCode] = useState<string | null>(null);
   const [codeLoading, setCodeLoading] = useState(false);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
@@ -36,23 +34,6 @@ const ParentNotificationsView: React.FC<{ context: AppContextType }> = ({ contex
       setToast('Could not generate code. Check if parent_invite_codes table exists.');
     } finally {
       setInviteCodeLoading(false);
-    }
-  };
-
-  const handleSavePhone = async () => {
-    if (!user || !studentProfile) return;
-    setSavingPhone(true);
-    try {
-      const cleaned = parentPhone.replace(/\D/g, '').slice(0, 15) || null;
-      await setStudentProfile({
-        ...studentProfile,
-        parent_phone: cleaned || undefined,
-      });
-      setToast('Parent number saved. Use "Share to WhatsApp" after activities to send updates.');
-    } catch (e) {
-      setToast('Failed to save.');
-    } finally {
-      setSavingPhone(false);
     }
   };
 
@@ -100,16 +81,14 @@ const ParentNotificationsView: React.FC<{ context: AppContextType }> = ({ contex
       </div>
 
       <p className="text-slate-400 mb-4">
-        Parents can get activity updates via WhatsApp (share after each session) or Telegram (automatic when linked).
+        Parents get activity updates <strong>automatically via Telegram</strong> when you complete a quiz or practice. No buttons to tap – just link once below.
       </p>
 
-      {/* Quick guide: where to see it working */}
       <div className="mb-6 p-4 rounded-xl bg-amber-900/20 border border-amber-600/40">
-        <h3 className="text-sm font-bold text-amber-300 mb-2">📌 Where you see it working</h3>
-        <ul className="text-slate-300 text-sm space-y-1 list-disc list-inside">
-          <li><strong>WhatsApp:</strong> Save parent&apos;s number below → then after a <strong>quiz</strong>, on the <strong>Quiz Results</strong> screen scroll to &quot;Share &amp; Save Results&quot; and tap <strong>Share to WhatsApp</strong>. WhatsApp opens with the message ready.</li>
-          <li><strong>Telegram (auto):</strong> Generate a 6-digit code below → parent sends <code className="bg-slate-700 px-1 rounded">/start CODE</code> to the bot → tap &quot;I&apos;ve connected – refresh&quot;. After that, when you finish a quiz or practice, the parent gets a Telegram message automatically. (Or use <strong>Copy for Telegram</strong> on the Quiz Results screen to paste into Telegram manually.)</li>
-        </ul>
+        <h3 className="text-sm font-bold text-amber-300 mb-2">📌 Automatic setup (one-time)</h3>
+        <p className="text-slate-300 text-sm">
+          Generate a 6-digit code below → parent sends <code className="bg-slate-700 px-1 rounded">/start CODE</code> to the bot in Telegram → tap &quot;I&apos;ve connected – refresh&quot;. After that, when you finish a quiz or practice, the parent gets a Telegram message automatically.
+        </p>
       </div>
 
       {toast && (
@@ -117,33 +96,6 @@ const ParentNotificationsView: React.FC<{ context: AppContextType }> = ({ contex
           {toast}
         </div>
       )}
-
-      {/* WhatsApp: parent phone for quick share */}
-      <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-600/50 mb-6">
-        <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
-          <span>📲</span> WhatsApp (share after quiz/practice)
-        </h3>
-        <p className="text-slate-400 text-sm mb-4">
-          Add parent&apos;s number with country code (e.g. 919876543210). When you tap &quot;Share to WhatsApp&quot; after a quiz or practice, it will open WhatsApp to send the update.
-        </p>
-        <div className="flex gap-3 flex-wrap">
-          <input
-            type="tel"
-            value={parentPhone}
-            onChange={(e) => setParentPhone(e.target.value)}
-            placeholder="e.g. 919876543210"
-            className="flex-1 min-w-[200px] p-3 rounded-lg bg-slate-800 border border-slate-600 text-white placeholder-slate-500 focus:border-amber-500"
-          />
-          <button
-            onClick={handleSavePhone}
-            disabled={savingPhone}
-            onMouseEnter={playHoverSound}
-            className="px-4 py-3 rounded-lg bg-green-600 text-white font-bold hover:bg-green-500 disabled:opacity-50"
-          >
-            {savingPhone ? 'Saving...' : 'Save'}
-          </button>
-        </div>
-      </div>
 
       {/* Telegram: link parent for automatic updates */}
       <div className="bg-slate-800/50 rounded-2xl p-6 border border-cyan-500/30">
@@ -239,7 +191,7 @@ const ParentNotificationsView: React.FC<{ context: AppContextType }> = ({ contex
       </div>
 
       <p className="text-slate-500 text-xs mt-6">
-        After each quiz or practice you can also use &quot;Share to WhatsApp&quot; or &quot;Copy for Telegram&quot; on the results screen to send an update manually.
+        Notifications are sent automatically when you complete a quiz or a practice problem. No manual sharing.
       </p>
     </div>
   );

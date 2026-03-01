@@ -1,54 +1,37 @@
-# How WhatsApp and Telegram Work in StudyBuddy
+# Automatic Parent Notifications (Telegram)
 
-Quick reference so you can see both features working.
+Parents get activity updates **automatically** when the student completes a quiz or a practice problem. No manual share buttons – link once, then messages are sent by the app.
 
 ---
 
-## Where to open the settings
+## Where to set it up
 
 1. Log in as a **student**.
-2. Go to **Dashboard** (home after login).
-3. At the top you’ll see a green bar: **“Send activity to parent”** → tap it.  
-   Or use the **Parent** card in Quick Actions.
-4. You’re on **Parent Notifications**. Here you set up WhatsApp and/or Telegram.
+2. Go to **Dashboard** (or tap **Parent** in the bottom nav on mobile).
+3. Tap the green bar **“Send activity to parent”** or the **Parent** quick action.
+4. You’re on **Parent Notifications**. Use the **Telegram** section only (manual WhatsApp/Telegram share options have been removed).
 
 ---
 
-## WhatsApp (manual share)
+## How automatic Telegram works
 
-**How it works:** You share the result yourself after each quiz. No backend setup.
+Once the parent is linked via the bot, they get a Telegram message **automatically** when the student finishes a quiz or a practice problem. No button to tap after each activity.
 
-**Steps:**
-
-1. On **Parent Notifications**, in the **WhatsApp** section, enter the parent’s number with country code (e.g. `919876543210`), tap **Save**.
-2. Do a quiz (Upload → generate → take quiz).
-3. On the **Quiz Results** screen, scroll down to **“Share & Save Results”**.
-4. Under **“Send to parent (WhatsApp or Telegram)”** tap **Share to WhatsApp**.  
-   WhatsApp (app or web) opens with the result message; you send it to the saved number (or choose a contact if no number was saved).
-
-**If you don’t see the button:** Make sure you’re on the **Quiz Results** screen (after submitting the quiz), not on the dashboard. The WhatsApp/Telegram buttons are only on the results page.
-
----
-
-## Telegram (automatic updates)
-
-**How it works:** Once the parent is linked via the bot, they get a Telegram message **automatically** when you finish a quiz or a practice problem. No tap needed after each activity.
-
-**What you need first (one-time):**
+### One-time setup (you need)
 
 - A Telegram bot (from [@BotFather](https://t.me/BotFather)).
-- In **Supabase**: `TELEGRAM_BOT_TOKEN` in Edge Function secrets; deploy **notify-parent** and **telegram-webhook**; set the webhook to your `telegram-webhook` function URL.
+- In **Supabase**: add `TELEGRAM_BOT_TOKEN` in Edge Function secrets; deploy **notify-parent** and **telegram-webhook**; set the webhook to your `telegram-webhook` function URL.
 - In **Supabase**: run the migration that adds `parent_link_codes` and `parent_telegram_chat_id` on `profiles` (see `supabase/migrations/parent_and_telegram_schema.sql` or `PARENT_NOTIFICATIONS_SETUP.md`).
 
-**Steps in the app:**
+### In the app
 
 1. On **Parent Notifications**, in the **Telegram** section, tap **Generate 6-digit code**.
-2. Parent opens your bot in Telegram (link shown on the same page), taps **Start**.
+2. Parent opens your bot in Telegram (link on the same page), taps **Start**.
 3. Parent sends **one message:** `/start` then a **space** then the 6-digit code, e.g. `/start 482917`.
 4. Back in the app, tap **“I’ve connected – refresh”**. You should see “Parent linked” (or “Telegram connected!”).
-5. From now on, when you **complete a quiz** or **answer a practice problem**, the parent gets a Telegram message automatically.
+5. From then on, when the student **completes a quiz** or **answers a practice problem**, the parent gets a Telegram message automatically.
 
-**If Telegram never sends:**
+### If Telegram never sends
 
 - Check Supabase Edge Function logs for **notify-parent** and **telegram-webhook**.
 - Confirm the webhook is set: `https://YOUR_PROJECT_REF.supabase.co/functions/v1/telegram-webhook`.
@@ -59,9 +42,8 @@ Quick reference so you can see both features working.
 
 ## Summary
 
-| Feature   | When parent gets it                         | Where you see it in the app                    |
-|----------|---------------------------------------------|-----------------------------------------------|
-| WhatsApp | When you tap **Share to WhatsApp**          | Quiz Results → Share & Save Results            |
-| Telegram | Automatically after each quiz/practice      | No extra tap; parent receives in Telegram     |
-
-If nothing seems to work: (1) Confirm you’re on **Quiz Results** for WhatsApp. (2) For Telegram, confirm bot + webhook + DB and that the parent linked with `/start CODE` and you tapped refresh.
+| What                | How                                        |
+|---------------------|--------------------------------------------|
+| Parent notifications | **Automatic** via Telegram only            |
+| When parent gets it | After each quiz completion or practice     |
+| Manual share        | Removed (no “Share to WhatsApp” / “Copy for Telegram” buttons) |

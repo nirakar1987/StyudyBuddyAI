@@ -7,7 +7,6 @@ import { EnvelopeIcon } from './icons/EnvelopeIcon';
 import { ArrowDownTrayIcon } from './icons/ArrowDownTrayIcon';
 import { useSoundEffects } from '../hooks/useSoundEffects';
 import { generateAnswerExplanation } from '../services/geminiService';
-import { buildActivityMessage, getWhatsAppShareUrl, copyToClipboard } from '../services/parentNotificationService';
 import { LightBulbIcon } from './icons/LightBulbIcon';
 
 interface QuizResultsViewProps {
@@ -23,18 +22,6 @@ const QuizResultsView: React.FC<QuizResultsViewProps> = ({ context }) => {
     const [soundPlayed, setSoundPlayed] = useState(false);
     const [explanations, setExplanations] = useState<Record<number, string | null>>({});
     const [loadingExplanation, setLoadingExplanation] = useState<number | null>(null);
-    const [shareToast, setShareToast] = useState<string | null>(null);
-
-    const parentShareMessage = studentProfile && quizScore && generatedQuiz
-        ? buildActivityMessage('quiz_complete', {
-            studentName: studentProfile.name,
-            subject: studentProfile.subject,
-            grade: studentProfile.grade,
-            score: quizScore.score,
-            total: quizScore.total,
-            topics: generatedQuiz.topics,
-        })
-        : '';
 
     useEffect(() => {
         if (lastModuleCompleted && !soundPlayed) {
@@ -179,34 +166,6 @@ const QuizResultsView: React.FC<QuizResultsViewProps> = ({ context }) => {
                         <p className="text-amber-300">You've mastered all topics for the "{lastModuleCompleted}" module. Great job!</p>
                     </div>
                 )}
-
-                {/* Send to parent – at top so it’s visible without scrolling */}
-                <div className="mb-6 p-4 rounded-xl bg-emerald-900/40 border-2 border-emerald-500/60 no-print">
-                    <h3 className="text-base font-bold text-emerald-300 mb-2">📱 Send to parent (WhatsApp or Telegram)</h3>
-                    <p className="text-slate-400 text-sm mb-3">Share your quiz result with your parent.</p>
-                    <div className="flex flex-wrap gap-2">
-                        <button
-                            onClick={() => {
-                                if (parentShareMessage) window.open(getWhatsAppShareUrl(parentShareMessage, studentProfile?.parent_phone), '_blank');
-                            }}
-                            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-500 rounded-lg font-semibold text-sm transition-colors active:scale-95"
-                        >
-                            <span>📲</span> Share to WhatsApp
-                        </button>
-                        <button
-                            onClick={async () => {
-                                if (parentShareMessage && (await copyToClipboard(parentShareMessage))) {
-                                    setShareToast('Copied! Paste in Telegram to send to parent.');
-                                    setTimeout(() => setShareToast(null), 3000);
-                                }
-                            }}
-                            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 rounded-lg font-semibold text-sm transition-colors active:scale-95"
-                        >
-                            <span>✈️</span> Copy for Telegram
-                        </button>
-                    </div>
-                    {shareToast && <p className="text-sm text-green-400 mt-2">{shareToast}</p>}
-                </div>
 
                 <div className="flex-grow overflow-y-auto pr-2 space-y-4 print-container">
                     {questionList}
