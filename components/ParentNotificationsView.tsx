@@ -6,7 +6,9 @@ import { getWhatsAppShareUrl, copyToClipboard } from '../services/parentNotifica
 import { ArrowLeftOnRectangleIcon } from './icons/ArrowLeftOnRectangleIcon';
 import { useSoundEffects } from '../hooks/useSoundEffects';
 
-const TELEGRAM_BOT_USERNAME = 'StudyBuddyParentBot'; // Replace with your bot's @username after creating via BotFather
+// Your bot from BotFather – use env to override: VITE_TELEGRAM_BOT_USERNAME (no @)
+const TELEGRAM_BOT_USERNAME = import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'StudyBuddyParentbot';
+const TELEGRAM_BOT_LINK = `https://t.me/${TELEGRAM_BOT_USERNAME}`;
 
 const ParentNotificationsView: React.FC<{ context: AppContextType }> = ({ context }) => {
   const { user, studentProfile, setStudentProfile, setAppState } = context;
@@ -135,7 +137,7 @@ const ParentNotificationsView: React.FC<{ context: AppContextType }> = ({ contex
       </div>
 
       {/* Telegram: link parent for automatic updates */}
-      <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-600/50">
+      <div className="bg-slate-800/50 rounded-2xl p-6 border border-cyan-500/30">
         <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
           <span>✈️</span> Telegram (automatic updates)
         </h3>
@@ -145,9 +147,22 @@ const ParentNotificationsView: React.FC<{ context: AppContextType }> = ({ contex
           </div>
         ) : (
           <>
-            <p className="text-slate-400 text-sm mb-4">
-              Parent opens Telegram, finds <strong className="text-slate-300">@{TELEGRAM_BOT_USERNAME}</strong>, taps Start, then sends: <code className="bg-slate-700 px-2 py-1 rounded">/start CODE</code> (use the code below).
-            </p>
+            <div className="bg-slate-900/60 rounded-xl p-4 mb-4 border border-cyan-500/20">
+              <p className="text-cyan-200 font-semibold mb-2">Parent should follow these steps:</p>
+              <ol className="list-decimal list-inside space-y-2 text-slate-300 text-sm">
+                <li>Open Telegram and tap the link below (or search for <strong className="text-white">@{TELEGRAM_BOT_USERNAME}</strong>)</li>
+                <li>Tap <strong className="text-white">Start</strong> in the chat</li>
+                <li>Send this exact message: <code className="bg-slate-700 px-2 py-1 rounded text-amber-300 font-mono">/start {linkCode || 'CODE'}</code> (use the 6-digit code you generate below)</li>
+              </ol>
+              <a
+                href={TELEGRAM_BOT_LINK}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 mt-3 px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-sm"
+              >
+                Open @{TELEGRAM_BOT_USERNAME} in Telegram →
+              </a>
+            </div>
             {!linkCode ? (
               <button
                 onClick={handleGenerateCode}
@@ -159,6 +174,7 @@ const ParentNotificationsView: React.FC<{ context: AppContextType }> = ({ contex
               </button>
             ) : (
               <div className="space-y-3">
+                <p className="text-slate-400 text-sm font-semibold">Your code (give this to parent):</p>
                 <div className="flex items-center gap-3">
                   <span className="text-2xl font-mono font-bold text-amber-400 bg-slate-900 px-4 py-2 rounded-lg">
                     {linkCode}
@@ -171,8 +187,8 @@ const ParentNotificationsView: React.FC<{ context: AppContextType }> = ({ contex
                     Copy
                   </button>
                 </div>
-                <p className="text-slate-500 text-sm">
-                  Tell your parent: In Telegram, open @{TELEGRAM_BOT_USERNAME} and send: /start {linkCode}
+                <p className="text-slate-400 text-sm">
+                  Parent types in Telegram: <code className="bg-slate-700 px-2 py-1 rounded text-amber-300">/start {linkCode}</code>
                 </p>
                 <button
                   onClick={handleRefreshLinked}

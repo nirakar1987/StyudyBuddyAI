@@ -10,11 +10,32 @@ View your app in AI Studio: https://ai.studio/apps/drive/1zqEcQNHamyMeo-sY9bZyCu
 
 ## Run Locally
 
-**Prerequisites:**  Node.js
-
+**Prerequisites:** Node.js
 
 1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+   ```bash
+   npm install
+   ```
+2. Copy env and add your keys:
+   ```bash
+   cp .env.example .env.local
+   ```
+   Edit `.env.local` and set:
+   - **GEMINI_API_KEY** – your Gemini API key
+   - **SUPABASE_URL** – from Supabase → Project Settings → API (Project URL)
+   - **SUPABASE_ANON_KEY** – from Supabase → Project Settings → API (anon public key)
 3. Run the app:
-   `npm run dev`
+   ```bash
+   npm run dev
+   ```
+
+## Supabase setup (auth, parent, Telegram)
+
+1. In Supabase **SQL Editor**, run the migration:  
+   `supabase/migrations/parent_and_telegram_schema.sql`
+2. For Telegram auto-notifications: in Supabase **Project Settings → Edge Functions → Secrets**, add **TELEGRAM_BOT_TOKEN** (your bot token from BotFather). Then deploy:
+   ```bash
+   npx supabase functions deploy telegram-webhook
+   npx supabase functions deploy notify-parent
+   ```
+   Set the webhook URL as in `PARENT_NOTIFICATIONS_SETUP.md`.
