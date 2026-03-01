@@ -15,16 +15,19 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*' } });
   }
+
   const token = Deno.env.get('TELEGRAM_BOT_TOKEN');
   if (!token) {
     return new Response(JSON.stringify({ error: 'TELEGRAM_BOT_TOKEN not set' }), { status: 500 });
   }
+
   let body: NotifyBody;
   try {
     body = await req.json();
   } catch {
     return new Response(JSON.stringify({ error: 'Invalid JSON body' }), { status: 400 });
   }
+
   const { userId, eventType, summary } = body;
   if (!userId || !summary) {
     return new Response(JSON.stringify({ error: 'userId and summary required' }), { status: 400 });
@@ -36,7 +39,7 @@ Deno.serve(async (req) => {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('parent_telegram_chat_id, full_name')
+    .select('parent_telegram_chat_id, full_name, name')
     .eq('id', userId)
     .single();
 
@@ -44,43 +47,24 @@ Deno.serve(async (req) => {
   const parentChatId = profile?.parent_telegram_chat_id;
 
   if (!parentChatId && !adminChatId) {
+    console.warn(`No Telegram Chat ID found for user ${userId} (Parent) or Admin.`);
     return new Response(JSON.stringify({ ok: false, reason: 'no recipients' }), { status: 200 });
   }
 
-  const title = eventType === 'quiz_complete' ? '📝 Quiz completed' : eventType === 'practice_complete' ? '💡 Practice done' : '📚 Activity';
-  const text = `${title}\n\n${summary}`;
+  const titleEmoji = eventType === 'quiz_complete' ? '📝' : eventType === 'practice_complete' ? '💡' : '📚';
+  const text = `${titleEmoji} <b>ACTIVITY ALERT</b>\n\n${summary}`;
 
   const sendPromises = [];
 
   // 1. Send to linked parent
   if (parentChatId) {
-    sendPromises.push(
-      fetch(`${TELEGRAM_API}${token}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: parentChatId,
-          text,
-          parse_mode: 'HTML'
-        }),
-      })
-    );
+    sendPromises.push(sendTelegram(token, Number(parentChatId), text));
   }
 
   // 2. Send to global admin monitor
   if (adminChatId) {
-    const adminText = `🚨 <b>GLOBAL MONITOR</b> 🚨\nStudent: <b>${profile?.full_name || 'Anonymous'}</b>\n\n${text}`;
-    sendPromises.push(
-      fetch(`${TELEGRAM_API}${token}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: adminChatId,
-          text: adminText,
-          parse_mode: 'HTML'
-        }),
-      })
-    );
+    const adminText = `🚨 <b>GLOBAL MONITOR</b> 🚨\nStudent: <b>${profile?.full_name || profile?.name || 'Anonymous'}</b>\n\n${text}`;
+    sendPromises.push(sendTelegram(token, Number(adminChatId), adminText));
   }
 
   const results = await Promise.all(sendPromises);
@@ -89,3 +73,31 @@ Deno.serve(async (req) => {
     headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
   });
 });
+
+async function sendTelegram(token: string, chatId: number, text: string, parseMode: string = 'HTML'): Promise<void> {
+  const resp = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text: text,
+      parse_mode: parseMode
+    }),
+  });
+
+  if (!resp.ok) {
+    const errorData = await resp.json();
+    console.error('Telegram Send Error:', errorData);
+    // If HTML parsing fails, fallback to plain text (strip tags)
+    if (parseMode === 'HTML') {
+      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: `⚠️ (Format Error - Plain Text Fallback)\n\n${text.replace(/<[^>]*>/g, '')}`
+        }),
+      });
+    }
+  }
+}
