@@ -31,6 +31,7 @@ import PatternDetectiveView from './PatternDetectiveView';
 import ParentNotificationsView from './ParentNotificationsView';
 import HomeworkScannerView from './HomeworkScannerView';
 import NCERTSolutionsView from './NCERTSolutionsView';
+import RevisionCardsView from './RevisionCardsView';
 interface InteractionPanelProps {
   context: AppContextType;
 }
@@ -97,6 +98,8 @@ const InteractionPanel: React.FC<InteractionPanelProps> = ({ context }) => {
         return <HomeworkScannerView context={context} />;
       case AppState.NCERT_SOLUTIONS:
         return <NCERTSolutionsView context={context} />;
+      case AppState.REVISION_CARDS:
+        return <RevisionCardsView context={context} />;
       default:
         return <Dashboard context={context} />;
     }
