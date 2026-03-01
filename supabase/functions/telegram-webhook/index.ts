@@ -116,7 +116,18 @@ Deno.serve(async (req) => {
       });
 
       const aiData = await aiResponse.json();
-      const insightText = aiData.candidates?.[0]?.content?.parts?.[0]?.text || '🤖 Sorry, Gemini could not analyze the data right now.';
+
+      if (!aiResponse.ok) {
+        console.error('Gemini Error:', aiData);
+        await sendTelegram(token, chatId, `🤖 *AI Service Error*: [${aiResponse.status}] ${aiData.error?.message || 'Unknown error'}`);
+        return new Response('ok', { status: 200 });
+      }
+
+      const insightText = aiData.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!insightText) {
+        await sendTelegram(token, chatId, '🤖 Gemini returned empty results. Is the data too small?');
+        return new Response('ok', { status: 200 });
+      }
 
       await sendTelegram(token, chatId, `🧠 *AI Insights Report*\n\n${insightText}`);
       return new Response('ok', { status: 200 });
