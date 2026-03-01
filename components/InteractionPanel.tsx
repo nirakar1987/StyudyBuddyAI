@@ -24,8 +24,6 @@ import ChapterQAView from './ChapterQAView';
 
 import MultiplayerChallengeView from './MultiplayerChallengeView';
 import MathMasteryView from './MathMasteryView';
-import TimeTravelView from './TimeTravelView';
-import PodcastifyView from './PodcastifyView';
 import BookQuizView from './BookQuizView';
 import FlashcardsView from './FlashcardsView';
 import PointShopView from './PointShopView';
@@ -84,10 +82,6 @@ const InteractionPanel: React.FC<InteractionPanelProps> = ({ context }) => {
         return <MultiplayerChallengeView context={context} />;
       case AppState.MATH_MASTERY:
         return <MathMasteryView context={context} />;
-      case AppState.TIME_TRAVEL:
-        return <TimeTravelView context={context} />;
-      case AppState.PODCASTIFY:
-        return <PodcastifyView context={context} />;
       case AppState.BOOK_QUIZ:
         return <BookQuizView context={context} />;
       case AppState.FLASHCARDS:

@@ -12,8 +12,6 @@ import { PencilIcon } from './icons/PencilIcon';
 import { CalendarIcon } from './icons/CalendarIcon';
 import { ChartBarIcon } from './icons/ChartBarIcon';
 import { DocumentTextIcon } from './icons/DocumentTextIcon';
-import { GlobeAltIcon } from './icons/GlobeAltIcon';
-import { MicrophoneIcon } from './icons/MicrophoneIcon';
 import { SparklesIcon } from './icons/SparklesIcon';
 import { ShoppingBagIcon } from './icons/ShoppingBagIcon';
 import { useSoundEffects } from '../hooks/useSoundEffects';
@@ -200,14 +198,12 @@ const Dashboard: React.FC<DashboardProps> = ({ context }) => {
                         { icon: <LightBulbIcon className="w-10 h-10" />, label: "Practice", emoji: "💡", gradient: "from-yellow-600 to-orange-600", onClick: startPracticeSession },
                         { icon: <BeakerIcon className="w-10 h-10" />, label: "Solve", emoji: "🧪", gradient: "from-purple-600 to-pink-600", onClick: startSolveIssue },
                         { icon: <VideoCameraIcon className="w-10 h-10" />, label: "Videos", emoji: "🎬", gradient: "from-red-600 to-rose-600", onClick: startVideoGeneration },
-                        { icon: <MicrophoneIcon className="w-10 h-10" />, label: "Podcastify", emoji: "🎙️", gradient: "from-cyan-600 to-blue-800", onClick: () => setAppState(AppState.PODCASTIFY) },
                         { icon: <UsersIcon className="w-10 h-10" />, label: "Chat", emoji: "💬", gradient: "from-indigo-600 to-blue-600", onClick: startGlobalChat },
                         { icon: <BeakerIcon className="w-10 h-10" />, label: "Math Helper", emoji: "🧮", gradient: "from-cyan-600 to-teal-600", onClick: () => setAppState(AppState.MATH_MASTERY) },
                         { icon: <CalendarIcon className="w-10 h-10" />, label: "Plan", emoji: "📅", gradient: "from-orange-600 to-amber-600", onClick: () => setAppState(AppState.STUDY_PLAN) },
                         { icon: <ChartBarIcon className="w-10 h-10" />, label: "Analytics", emoji: "📊", gradient: "from-pink-600 to-fuchsia-600", onClick: () => setAppState(AppState.ANALYTICS) },
                         { icon: <BookOpenIcon className="w-10 h-10" />, label: "Book Quiz", emoji: "📚", gradient: "from-indigo-600 to-blue-700", onClick: () => setAppState(AppState.BOOK_QUIZ) },
                         { icon: <UsersIcon className="w-10 h-10" />, label: "Challenges", emoji: "🏆", gradient: "from-teal-600 to-cyan-600", onClick: () => setAppState(AppState.MULTIPLAYER_CHALLENGE) },
-                        { icon: <GlobeAltIcon className="w-10 h-10" />, label: "Time Travel", emoji: "🕰️", gradient: "from-fuchsia-600 to-purple-800", onClick: () => setAppState(AppState.TIME_TRAVEL) },
                         { icon: <ShoppingBagIcon className="w-10 h-10" />, label: "Store", emoji: "🛍️", gradient: "from-yellow-500 to-amber-600", onClick: () => setAppState(AppState.POINT_SHOP) },
                         { icon: <span className="text-4xl">🕵️‍♂️</span>, label: "Patterns", emoji: "🔍", gradient: "from-cyan-700 to-blue-900", onClick: () => setAppState(AppState.PATTERN_DETECTIVE) },
                     ].map((action, index) => (

@@ -258,22 +258,6 @@ export function startDirectQAChat(profile: StudentProfile): Chat {
   return chatInstance;
 }
 
-export function startTimeTravelChat(figure: any, profile: StudentProfile): Chat {
-  const ai = getAiClient();
-  const systemInstruction = `You are ${figure.name}, the ${figure.role}. 
-  Personality: ${figure.personality}.
-  Knowledge: You have deep knowledge of ${figure.knowledge}.
-  Context: You are speaking to a ${profile.grade}th grade student named ${profile.name}.
-  Tone: Stay in character. Be inspiring, era-appropriate, and educational. Answer as if you are actually that person in their time, or looking back from history. 
-  Encourage the student to ask about your life, work, or the world you lived in.`;
-
-  chatInstance = ai.chats.create({
-    model: 'gemini-3-flash-preview',
-    config: { systemInstruction },
-  });
-  return chatInstance;
-}
-
 export async function continueChat(message: string): Promise<GenerateContentResponse> {
   if (!chatInstance) throw new Error("Chat not initialized.");
   try {
