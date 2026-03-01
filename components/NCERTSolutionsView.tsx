@@ -9,6 +9,11 @@ interface NCERTSolutionsViewProps {
 }
 
 const SUBJECTS: Record<string, string[]> = {
+    '1': ['Mathematics', 'English', 'Hindi'],
+    '2': ['Mathematics', 'English', 'Hindi'],
+    '3': ['Mathematics', 'EVS', 'English', 'Hindi'],
+    '4': ['Mathematics', 'EVS', 'English', 'Hindi'],
+    '5': ['Mathematics', 'EVS', 'English', 'Hindi'],
     '6': ['Mathematics', 'Science', 'Social Science', 'English', 'Hindi'],
     '7': ['Mathematics', 'Science', 'Social Science', 'English', 'Hindi'],
     '8': ['Mathematics', 'Science', 'Social Science', 'English', 'Hindi'],
@@ -20,7 +25,7 @@ const SUBJECTS: Record<string, string[]> = {
 
 const SUBJECT_EMOJIS: Record<string, string> = {
     'Mathematics': '📐', 'Science': '🔬', 'Social Science': '🌍', 'English': '📖', 'Hindi': '🕉️',
-    'Physics': '⚛️', 'Chemistry': '🧪', 'Biology': '🧬', 'Accountancy': '📊', 'Economics': '💹', 'Business Studies': '💼',
+    'EVS': '🌿', 'Physics': '⚛️', 'Chemistry': '🧪', 'Biology': '🧬', 'Accountancy': '📊', 'Economics': '💹', 'Business Studies': '💼',
 };
 
 const NCERTSolutionsView: React.FC<NCERTSolutionsViewProps> = ({ context }) => {
@@ -148,8 +153,8 @@ const NCERTSolutionsView: React.FC<NCERTSolutionsViewProps> = ({ context }) => {
                         {/* Class Picker */}
                         <div>
                             <label className="block text-sm font-black text-slate-300 uppercase tracking-widest mb-3">📚 Select Class</label>
-                            <div className="grid grid-cols-7 gap-2">
-                                {['6', '7', '8', '9', '10', '11', '12'].map(cls => (
+                            <div className="grid grid-cols-6 gap-2">
+                                {['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'].map(cls => (
                                     <button
                                         key={cls}
                                         onClick={() => { setSelectedClass(cls); setSelectedSubject(''); }}
