@@ -99,9 +99,18 @@ const ParentNotificationsView: React.FC<{ context: AppContextType }> = ({ contex
         </button>
       </div>
 
-      <p className="text-slate-400 mb-6">
+      <p className="text-slate-400 mb-4">
         Parents can get activity updates via WhatsApp (share after each session) or Telegram (automatic when linked).
       </p>
+
+      {/* Quick guide: where to see it working */}
+      <div className="mb-6 p-4 rounded-xl bg-amber-900/20 border border-amber-600/40">
+        <h3 className="text-sm font-bold text-amber-300 mb-2">📌 Where you see it working</h3>
+        <ul className="text-slate-300 text-sm space-y-1 list-disc list-inside">
+          <li><strong>WhatsApp:</strong> Save parent&apos;s number below → then after a <strong>quiz</strong>, on the <strong>Quiz Results</strong> screen scroll to &quot;Share &amp; Save Results&quot; and tap <strong>Share to WhatsApp</strong>. WhatsApp opens with the message ready.</li>
+          <li><strong>Telegram (auto):</strong> Generate a 6-digit code below → parent sends <code className="bg-slate-700 px-1 rounded">/start CODE</code> to the bot → tap &quot;I&apos;ve connected – refresh&quot;. After that, when you finish a quiz or practice, the parent gets a Telegram message automatically. (Or use <strong>Copy for Telegram</strong> on the Quiz Results screen to paste into Telegram manually.)</li>
+        </ul>
+      </div>
 
       {toast && (
         <div className="mb-4 p-3 rounded-lg bg-slate-700/50 text-slate-200 text-sm">

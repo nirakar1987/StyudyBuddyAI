@@ -39,4 +39,5 @@ View your app in AI Studio: https://ai.studio/apps/drive/1zqEcQNHamyMeo-sY9bZyCu
    npx supabase functions deploy telegram-webhook
    npx supabase functions deploy notify-parent
    ```
-   Set the webhook URL as in `PARENT_NOTIFICATIONS_SETUP.md`.
+   Set the webhook URL as in `PARENT_NOTIFICATIONS_SETUP.md`.  
+   **See [HOW_WHATSAPP_TELEGRAM_WORK.md](HOW_WHATSAPP_TELEGRAM_WORK.md)** for step-by-step: where to tap so WhatsApp and Telegram actually work in the app.

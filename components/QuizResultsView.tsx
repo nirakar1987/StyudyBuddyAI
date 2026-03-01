@@ -180,40 +180,42 @@ const QuizResultsView: React.FC<QuizResultsViewProps> = ({ context }) => {
                     </div>
                 )}
 
+                {/* Send to parent – at top so it’s visible without scrolling */}
+                <div className="mb-6 p-4 rounded-xl bg-emerald-900/40 border-2 border-emerald-500/60 no-print">
+                    <h3 className="text-base font-bold text-emerald-300 mb-2">📱 Send to parent (WhatsApp or Telegram)</h3>
+                    <p className="text-slate-400 text-sm mb-3">Share your quiz result with your parent.</p>
+                    <div className="flex flex-wrap gap-2">
+                        <button
+                            onClick={() => {
+                                if (parentShareMessage) window.open(getWhatsAppShareUrl(parentShareMessage, studentProfile?.parent_phone), '_blank');
+                            }}
+                            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-500 rounded-lg font-semibold text-sm transition-colors active:scale-95"
+                        >
+                            <span>📲</span> Share to WhatsApp
+                        </button>
+                        <button
+                            onClick={async () => {
+                                if (parentShareMessage && (await copyToClipboard(parentShareMessage))) {
+                                    setShareToast('Copied! Paste in Telegram to send to parent.');
+                                    setTimeout(() => setShareToast(null), 3000);
+                                }
+                            }}
+                            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 rounded-lg font-semibold text-sm transition-colors active:scale-95"
+                        >
+                            <span>✈️</span> Copy for Telegram
+                        </button>
+                    </div>
+                    {shareToast && <p className="text-sm text-green-400 mt-2">{shareToast}</p>}
+                </div>
+
                 <div className="flex-grow overflow-y-auto pr-2 space-y-4 print-container">
                     {questionList}
                 </div>
             </div>
 
             <div className="my-6 p-4 bg-slate-900/50 rounded-lg border border-slate-700 no-print">
-                <h3 className="text-lg font-semibold text-cyan-300 mb-3">Share & Save Results</h3>
+                <h3 className="text-lg font-semibold text-cyan-300 mb-3">More options</h3>
                 <div className="flex flex-col gap-4">
-                    {/* WhatsApp & Telegram – first and prominent */}
-                    <div className="p-4 rounded-xl bg-emerald-900/30 border border-emerald-500/40">
-                        <label className="block text-sm font-bold text-emerald-300 mb-2">📱 Send to parent (WhatsApp or Telegram)</label>
-                        <div className="flex flex-wrap gap-2">
-                            <button
-                                onClick={() => {
-                                    if (parentShareMessage) window.open(getWhatsAppShareUrl(parentShareMessage, studentProfile?.parent_phone), '_blank');
-                                }}
-                                className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg font-semibold text-sm transition-colors active:scale-95"
-                            >
-                                <span>📲</span> Share to WhatsApp
-                            </button>
-                            <button
-                                onClick={async () => {
-                                    if (parentShareMessage && (await copyToClipboard(parentShareMessage))) {
-                                        setShareToast('Copied! Paste in Telegram to send to parent.');
-                                        setTimeout(() => setShareToast(null), 3000);
-                                    }
-                                }}
-                                className="flex items-center justify-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 rounded-lg font-semibold text-sm transition-colors active:scale-95"
-                            >
-                                <span>✈️</span> Copy for Telegram
-                            </button>
-                        </div>
-                        {shareToast && <p className="text-sm text-green-400 mt-2">{shareToast}</p>}
-                    </div>
                     <div className="flex flex-col md:flex-row gap-4">
                     <div className="flex-1">
                         <label className="block text-sm font-medium text-slate-300 mb-1">Send results to parent's email</label>
