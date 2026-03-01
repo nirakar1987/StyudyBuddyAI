@@ -1,10 +1,19 @@
 
 import { User } from '@supabase/supabase-js';
 
+/** User account type – student uses the app; parent views activity and sets notifications. */
+export type UserRole = 'student' | 'parent';
+
 export enum AppState {
   LANDING_PAGE,
   AUTH,
+  ROLE_SELECT,
   PROFILE_SETUP,
+  PARENT_PROFILE_SETUP,
+  PARENT_DASHBOARD,
+  PARENT_CHILDREN,
+  PARENT_ACTIVITY,
+  PARENT_NOTIFICATION_SETTINGS,
   DASHBOARD,
   LESSON,
   UPLOAD,
@@ -65,9 +74,29 @@ export interface StudentProfile {
   avatar_url?: string;
   purchased_items?: string[];
   active_items?: string[];
-  /** Parent gets activity updates via Telegram/WhatsApp when set. */
   parent_telegram_chat_id?: string | null;
   parent_phone?: string | null;
+  role?: UserRole;
+}
+
+/** Parent user profile – same `profiles` table with role='parent'. */
+export interface ParentProfile {
+  id: string;
+  full_name: string;
+  role: 'parent';
+  parent_phone?: string | null;
+  parent_telegram_chat_id?: string | null;
+  created_at?: string;
+}
+
+/** Linked child for a parent (student profile summary). */
+export interface LinkedChild {
+  user_id: string;
+  name: string;
+  grade: number;
+  subject: string;
+  score?: number;
+  streak?: number;
 }
 
 /** Event types we can send to parent (Telegram or share text). */

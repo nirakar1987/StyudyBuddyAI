@@ -225,7 +225,10 @@ const AuthView: React.FC<AuthViewProps> = ({ context }) => {
                             Google
                         </button>
 
-                        <div className="mt-8 pt-6 border-t border-white/5 text-center">
+                        <p className="mt-6 text-center text-xs text-slate-500">
+                            👨‍👩‍👧 Parents: sign up then choose <strong className="text-slate-400">Parent</strong> when creating your profile to link to your child.
+                        </p>
+                        <div className="mt-6 pt-6 border-t border-white/5 text-center">
                             <button
                                 onClick={() => context.setAppState(AppState.DB_CHECK)}
                                 className="text-xs font-bold text-slate-500 hover:text-cyan-400 transition-colors tracking-widest uppercase flex items-center justify-center gap-2 mx-auto decoration-transparent hover:decoration-cyan-400 underline underline-offset-4 decoration-2"

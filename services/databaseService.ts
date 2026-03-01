@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient';
-import { StudentProfile, QuizAttempt } from '../types';
+import { StudentProfile, QuizAttempt, ParentProfile, LinkedChild } from '../types';
 
 // New type for chat message insertion
 export interface ChatMessageInsert {
@@ -44,14 +44,18 @@ export async function getProfile(userId: string): Promise<StudentProfile | null>
   }
 
   if (data) {
-    // Safely parse JSON fields that might be stored as strings
+    const role = (data.role as string) || 'student';
+    if (role === 'parent') {
+      return null; // Call getParentProfile for parent users.
+    }
     return {
       ...data,
-      name: data.full_name || '', // Read from the new 'full_name' database column.
+      name: data.full_name || '',
       topic_performance: typeof data.topic_performance === 'string' ? JSON.parse(data.topic_performance) : data.topic_performance || {},
       completed_modules: typeof data.completed_modules === 'string' ? JSON.parse(data.completed_modules) : data.completed_modules || [],
       parent_telegram_chat_id: data.parent_telegram_chat_id ?? null,
       parent_phone: data.parent_phone ?? null,
+      role: role as 'student',
     };
   }
   return null;
@@ -73,6 +77,7 @@ export async function upsertProfile(profile: StudentProfile & { id: string }) {
       completed_modules: JSON.stringify(profile.completed_modules || []),
       theme: profile.theme,
       avatar_style: profile.avatar_style,
+      role: (profile as any).role ?? 'student',
   };
   if (profile.parent_telegram_chat_id !== undefined) profileData.parent_telegram_chat_id = profile.parent_telegram_chat_id;
   if (profile.parent_phone !== undefined) profileData.parent_phone = profile.parent_phone;
@@ -246,4 +251,88 @@ export async function linkParentTelegram(userId: string, telegramChatId: string)
 
 export async function clearParentLinkCode(code: string): Promise<void> {
   await supabase!.from('parent_link_codes').delete().eq('code', code.trim());
+}
+
+// --- Parent account: profile, linking, invite codes
+// Tables: profiles.role ('student'|'parent'), parent_children (parent_id, student_id), parent_invite_codes (code, student_id, expires_at)
+
+export async function getParentProfile(userId: string): Promise<ParentProfile | null> {
+  const { data, error } = await supabase!
+    .from('profiles')
+    .select('id, full_name, role, parent_phone, parent_telegram_chat_id, created_at')
+    .eq('id', userId)
+    .single();
+  if (error && error.code !== 'PGRST116') throw error;
+  if (data && data.role === 'parent') {
+    return { id: data.id, full_name: data.full_name || '', role: 'parent', parent_phone: data.parent_phone ?? null, parent_telegram_chat_id: data.parent_telegram_chat_id ?? null, created_at: data.created_at };
+  }
+  return null;
+}
+
+export async function upsertParentProfile(profile: { id: string; full_name: string; parent_phone?: string | null; parent_telegram_chat_id?: string | null }): Promise<void> {
+  const { error } = await supabase!
+    .from('profiles')
+    .upsert({
+      id: profile.id,
+      full_name: profile.full_name,
+      role: 'parent',
+      parent_phone: profile.parent_phone ?? null,
+      parent_telegram_chat_id: profile.parent_telegram_chat_id ?? null,
+      grade: null,
+      subject: null,
+      topic_performance: '{}',
+      score: 0,
+      streak: 1,
+      completed_modules: '[]',
+    });
+  if (error) throw error;
+}
+
+export async function getLinkedChildren(parentUserId: string): Promise<LinkedChild[]> {
+  const { data: links, error } = await supabase!
+    .from('parent_children')
+    .select('student_id')
+    .eq('parent_id', parentUserId);
+  if (error) throw error;
+  if (!links?.length) return [];
+  const ids = links.map((r: { student_id: string }) => r.student_id);
+  const { data: profiles } = await supabase!.from('profiles').select('id, full_name, grade, subject, score, streak').in('id', ids);
+  return (profiles || []).map((p: any) => ({
+    user_id: p.id,
+    name: p.full_name || 'Student',
+    grade: p.grade ?? 0,
+    subject: p.subject || '',
+    score: p.score ?? 0,
+    streak: p.streak ?? 0,
+  }));
+}
+
+export async function linkParentToStudent(parentId: string, studentId: string): Promise<void> {
+  const { error } = await supabase!.from('parent_children').upsert({ parent_id: parentId, student_id: studentId }, { onConflict: 'parent_id,student_id' });
+  if (error) throw error;
+}
+
+const PARENT_INVITE_TTL_MINUTES = 30;
+
+export async function createParentInviteCode(studentUserId: string): Promise<string> {
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  const expiresAt = new Date(Date.now() + PARENT_INVITE_TTL_MINUTES * 60 * 1000).toISOString();
+  const { error } = await supabase!.from('parent_invite_codes').upsert({ code, student_id: studentUserId, expires_at: expiresAt }, { onConflict: 'code' });
+  if (error) throw error;
+  return code;
+}
+
+export async function getStudentIdByParentInviteCode(code: string): Promise<string | null> {
+  const { data, error } = await supabase!
+    .from('parent_invite_codes')
+    .select('student_id, expires_at')
+    .eq('code', code.trim())
+    .single();
+  if (error || !data) return null;
+  if (new Date(data.expires_at) < new Date()) return null;
+  return data.student_id;
+}
+
+export async function consumeParentInviteCode(code: string): Promise<void> {
+  await supabase!.from('parent_invite_codes').delete().eq('code', code.trim());
 }

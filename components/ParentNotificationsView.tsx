@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AppContextType, AppState } from '../types';
-import { getProfile } from '../services/databaseService';
+import { getProfile, createParentInviteCode } from '../services/databaseService';
 import { createParentLinkCode } from '../services/databaseService';
 import { getWhatsAppShareUrl, copyToClipboard } from '../services/parentNotificationService';
 import { ArrowLeftOnRectangleIcon } from './icons/ArrowLeftOnRectangleIcon';
@@ -15,10 +15,27 @@ const ParentNotificationsView: React.FC<{ context: AppContextType }> = ({ contex
   const [savingPhone, setSavingPhone] = useState(false);
   const [linkCode, setLinkCode] = useState<string | null>(null);
   const [codeLoading, setCodeLoading] = useState(false);
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const [inviteCodeLoading, setInviteCodeLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   const hasTelegram = !!studentProfile?.parent_telegram_chat_id;
+
+  const handleGenerateInviteCode = async () => {
+    if (!user) return;
+    setInviteCodeLoading(true);
+    setInviteCode(null);
+    try {
+      const code = await createParentInviteCode(user.id);
+      setInviteCode(code);
+      setToast('Share this code with your parent. They sign up as Parent and enter it to link.');
+    } catch (e) {
+      setToast('Could not generate code. Check if parent_invite_codes table exists.');
+    } finally {
+      setInviteCodeLoading(false);
+    }
+  };
 
   const handleSavePhone = async () => {
     if (!user || !studentProfile) return;
@@ -168,6 +185,31 @@ const ParentNotificationsView: React.FC<{ context: AppContextType }> = ({ contex
               </div>
             )}
           </>
+        )}
+      </div>
+
+      {/* Invite parent to create account (parent logs in with own email/password and enters this code) */}
+      <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-600/50 mt-6">
+        <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
+          <span>👨‍👩‍👧</span> Invite parent to create account
+        </h3>
+        <p className="text-slate-400 text-sm mb-4">
+          Generate a code. Your parent signs up in the app as &quot;Parent&quot;, then enters this code to link to your profile. They get their own login and can see your activity.
+        </p>
+        {!inviteCode ? (
+          <button
+            onClick={handleGenerateInviteCode}
+            disabled={inviteCodeLoading}
+            onMouseEnter={playHoverSound}
+            className="px-4 py-3 rounded-lg bg-violet-600 text-white font-bold hover:bg-violet-500 disabled:opacity-50 text-sm"
+          >
+            {inviteCodeLoading ? 'Generating...' : 'Generate invite code'}
+          </button>
+        ) : (
+          <div className="flex items-center gap-3">
+            <span className="text-2xl font-mono font-bold text-violet-400 bg-slate-900 px-4 py-2 rounded-lg">{inviteCode}</span>
+            <button onClick={() => copyToClipboard(inviteCode).then((ok) => setToast(ok ? 'Code copied!' : 'Copy failed'))} onMouseEnter={playHoverSound} className="text-sm text-slate-400 hover:text-white">Copy</button>
+          </div>
         )}
       </div>
 

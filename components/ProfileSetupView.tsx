@@ -66,7 +66,8 @@ const ProfileSetupView: React.FC<ProfileSetupViewProps> = ({ context }) => {
             streak: studentProfile?.streak || 1,
             completed_modules: studentProfile?.completed_modules || [],
             avatar_url: selectedAvatar || `https://api.dicebear.com/9.x/micah/svg?seed=${encodeURIComponent(name.trim())}`,
-            theme: studentProfile?.theme || 'midnight-bloom'
+            theme: studentProfile?.theme || 'midnight-bloom',
+            role: 'student'
         };
 
         await setStudentProfile(newProfile);

@@ -136,6 +136,24 @@ const Dashboard: React.FC<DashboardProps> = ({ context }) => {
                 </div>
             </div>
 
+            {/* Parent notifications – WhatsApp & Telegram (prominent) */}
+            <div
+                onClick={() => setAppState(AppState.PARENT_NOTIFICATIONS)}
+                onMouseEnter={playHoverSound}
+                className="mb-6 p-4 rounded-2xl border-2 border-emerald-500/50 bg-gradient-to-r from-emerald-900/40 to-teal-900/40 hover:from-emerald-800/50 hover:to-teal-800/50 cursor-pointer transition-all flex flex-wrap items-center justify-between gap-4"
+            >
+                <div className="flex items-center gap-4">
+                    <span className="text-4xl">📱</span>
+                    <div>
+                        <h3 className="text-lg font-bold text-white">Send activity to parent</h3>
+                        <p className="text-sm text-slate-300">Set up WhatsApp or Telegram so your parent gets updates when you complete quizzes or practice.</p>
+                    </div>
+                </div>
+                <button className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm whitespace-nowrap">
+                    Set up WhatsApp / Telegram →
+                </button>
+            </div>
+
             {/* Stats Cards with Enhanced Glassmorphism */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div onMouseEnter={playHoverSound} className="relative group bg-gradient-to-br from-blue-500/30 to-cyan-500/30 backdrop-blur-md p-8 rounded-3xl border-2 border-white/30 shadow-2xl hover:scale-105 hover:shadow-blue-500/50 transition-all duration-300 animate-slide-bounce overflow-hidden">
@@ -179,6 +197,7 @@ const Dashboard: React.FC<DashboardProps> = ({ context }) => {
                     {[
                         { icon: <BookOpenIcon className="w-10 h-10" />, label: "Learn", emoji: "📖", gradient: "from-blue-600 to-cyan-600", onClick: startLesson },
                         { icon: <UploadIcon className="w-10 h-10" />, label: "Quiz", emoji: "📝", gradient: "from-green-600 to-emerald-600", onClick: handleStartQuizGeneration },
+                        { icon: <span className="text-4xl">📱</span>, label: "Parent", emoji: "📲", gradient: "from-emerald-600 to-teal-700", onClick: () => setAppState(AppState.PARENT_NOTIFICATIONS) },
                         { icon: <LightBulbIcon className="w-10 h-10" />, label: "Practice", emoji: "💡", gradient: "from-yellow-600 to-orange-600", onClick: startPracticeSession },
                         { icon: <BeakerIcon className="w-10 h-10" />, label: "Solve", emoji: "🧪", gradient: "from-purple-600 to-pink-600", onClick: startSolveIssue },
                         { icon: <VideoCameraIcon className="w-10 h-10" />, label: "Videos", emoji: "🎬", gradient: "from-red-600 to-rose-600", onClick: startVideoGeneration },
@@ -192,7 +211,6 @@ const Dashboard: React.FC<DashboardProps> = ({ context }) => {
                         { icon: <GlobeAltIcon className="w-10 h-10" />, label: "Time Travel", emoji: "🕰️", gradient: "from-fuchsia-600 to-purple-800", onClick: () => setAppState(AppState.TIME_TRAVEL) },
                         { icon: <ShoppingBagIcon className="w-10 h-10" />, label: "Store", emoji: "🛍️", gradient: "from-yellow-500 to-amber-600", onClick: () => setAppState(AppState.POINT_SHOP) },
                         { icon: <span className="text-4xl">🕵️‍♂️</span>, label: "Patterns", emoji: "🔍", gradient: "from-cyan-700 to-blue-900", onClick: () => setAppState(AppState.PATTERN_DETECTIVE) },
-                        { icon: <span className="text-4xl">📱</span>, label: "Parent", emoji: "📲", gradient: "from-emerald-600 to-teal-700", onClick: () => setAppState(AppState.PARENT_NOTIFICATIONS) },
                     ].map((action, index) => (
                         <ActionCardBento
                             key={action.label}

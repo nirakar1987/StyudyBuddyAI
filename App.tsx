@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { AppState, StudentProfile, GeneratedQuiz, AvatarState, ChatMessage, LearningModule, PracticeProblem, ProblemFeedback, QuizAttempt, QuestionType, OnlineUser } from './types';
+import { AppState, StudentProfile, GeneratedQuiz, AvatarState, ChatMessage, LearningModule, PracticeProblem, ProblemFeedback, QuizAttempt, QuestionType, OnlineUser, ParentProfile } from './types';
 import { User } from '@supabase/supabase-js';
 import Avatar from './components/Avatar';
 import InteractionPanel from './components/InteractionPanel';
@@ -10,12 +10,15 @@ import { generateProgressReport, analyzeAndGenerateQuestions, evaluateAnswerSema
 import { LEARNING_MODULES } from './data/modules';
 import LandingPageView from './components/LandingPageView';
 import { supabase, isSupabaseConfigured } from './services/supabaseClient';
-import { getProfile, upsertProfile, addQuizAttempt } from './services/databaseService';
+import { getProfile, upsertProfile, addQuizAttempt, getParentProfile, upsertParentProfile } from './services/databaseService';
 import { notifyParentViaTelegram, buildActivityMessage } from './services/parentNotificationService';
 import UserPresence from './components/UserPresence';
 import ChatNotificationPopup from './components/ChatNotificationPopup';
 import MobileNav from './components/MobileNav';
 import OfflineBanner from './components/OfflineBanner';
+import RoleSelectionView from './components/RoleSelectionView';
+import ParentProfileSetupView from './components/ParentProfileSetupView';
+import ParentDashboardView from './components/ParentDashboardView';
 import { useOffline } from './hooks/useOffline';
 import { useToast } from './context/ToastContext';
 import { ChatMessageRow } from './services/databaseService';
@@ -89,6 +92,7 @@ const App: React.FC = () => {
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
   const [chatPartner, setChatPartner] = useState<OnlineUser | null>(null);
   const [chatNotification, setChatNotification] = useState<{ sender: OnlineUser, message: string, channelId: string } | null>(null);
+  const [parentProfile, setParentProfile] = useState<ParentProfile | null>(null);
 
 
   useEffect(() => {
@@ -102,24 +106,26 @@ const App: React.FC = () => {
     try {
       const profile = await getProfile(user.id);
       if (profile) {
-        // Load custom avatar from localStorage as a fallback to DB
         const customAvatarUrl = localStorage.getItem(`customAvatarUrl_${user.id}`);
-        if (customAvatarUrl) {
-          profile.avatar_url = customAvatarUrl;
-        }
-
+        if (customAvatarUrl) profile.avatar_url = customAvatarUrl;
         setStudentProfile(profile);
         setScore(profile.score || 0);
         setStreak(profile.streak || 1);
         setCompletedModules(profile.completed_modules || []);
         setThemeState(profile.theme || 'midnight-bloom');
         setAppState(AppState.DASHBOARD);
-      } else {
-        setAppState(AppState.PROFILE_SETUP);
+        return;
       }
+      const parent = await getParentProfile(user.id);
+      if (parent) {
+        setParentProfile(parent);
+        setAppState(AppState.PARENT_DASHBOARD);
+        return;
+      }
+      setAppState(AppState.ROLE_SELECT);
     } catch (error) {
       console.error("Error fetching user profile:", error);
-      setAppState(AppState.PROFILE_SETUP);
+      setAppState(AppState.ROLE_SELECT);
     }
   }, []);
 
@@ -182,6 +188,7 @@ const App: React.FC = () => {
         fetchUserData(currentUser);
       } else if (!currentUser) {
         setStudentProfile(null);
+        setParentProfile(null);
         setScore(0);
         setStreak(0);
         setCompletedModules([]);
@@ -524,6 +531,39 @@ const App: React.FC = () => {
 
   if (appState === AppState.LANDING_PAGE && !user) {
     return <LandingPageView context={contextValue} />;
+  }
+
+  if (user && parentProfile) {
+    return (
+      <ParentDashboardView
+        context={contextValue}
+        parentProfile={parentProfile}
+        onParentProfileUpdate={async (updates) => {
+          if (!user) return;
+          const next = { ...parentProfile, ...updates };
+          await upsertParentProfile({ id: next.id, full_name: next.full_name, parent_phone: next.parent_phone ?? null, parent_telegram_chat_id: next.parent_telegram_chat_id ?? null });
+          setParentProfile(next);
+        }}
+        onLogout={async () => { await supabase!.auth.signOut(); }}
+      />
+    );
+  }
+
+  if (appState === AppState.ROLE_SELECT) {
+    return <RoleSelectionView context={contextValue} />;
+  }
+
+  if (appState === AppState.PARENT_PROFILE_SETUP && user) {
+    return (
+      <ParentProfileSetupView
+        context={contextValue}
+        onParentReady={async () => {
+          if (!user) return;
+          const parent = await getParentProfile(user.id);
+          if (parent) { setParentProfile(parent); setAppState(AppState.PARENT_DASHBOARD); }
+        }}
+      />
+    );
   }
 
   if (!user) {
