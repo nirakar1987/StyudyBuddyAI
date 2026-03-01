@@ -88,6 +88,12 @@ const GlobalChatView: React.FC<{ context: AppContextType }> = ({ context }) => {
             const newChatMessage = dbRowToChatMessage(payload.new as ChatMessageRow);
             setMessages(prev => {
                 if (prev.some(m => m.id === newChatMessage.id)) return prev;
+                // Replace optimistic (temp) message from current user with same content
+                const fromMe = newChatMessage.sender.id === user?.id;
+                if (fromMe) {
+                    const withoutTemp = prev.filter(m => !(m.id.startsWith('temp-') && m.sender.id === user?.id && m.content === newChatMessage.content));
+                    if (withoutTemp.length < prev.length) return [...withoutTemp, newChatMessage];
+                }
                 return [...prev, newChatMessage];
             });
         };
@@ -126,30 +132,67 @@ const GlobalChatView: React.FC<{ context: AppContextType }> = ({ context }) => {
         };
     }, [setupChat]);
 
+    // Polling fallback: fetch new messages every 3s so chat works even if Realtime is off (WhatsApp-like)
+    useEffect(() => {
+        if (!channelId || isLoadingHistory || error) return;
+        const poll = async () => {
+            try {
+                const rows = await getMessages(channelId);
+                setMessages(prev => {
+                    const byId = new Map(prev.map(m => [m.id, m]));
+                    rows.forEach(row => {
+                        const msg = dbRowToChatMessage(row);
+                        if (!byId.has(msg.id)) byId.set(msg.id, msg);
+                    });
+                    return Array.from(byId.values()).sort(
+                        (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+                    );
+                });
+            } catch (_) { /* ignore poll errors */ }
+        };
+        const t = setInterval(poll, 3000);
+        return () => clearInterval(t);
+    }, [channelId, isLoadingHistory, error]);
+
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
         const content = messageInput.trim();
-        if (content && user && studentProfile && channelId) {
+        if (!content || !user || !studentProfile || !channelId) return;
 
-            const messagePayload: ChatMessageInsert = {
-                channel_id: channelId,
-                sender_id: user.id,
-                content: content,
-                sender_payload: {
-                    name: studentProfile.name,
-                    avatar_url: studentProfile.avatar_url,
-                },
-            };
+        const messagePayload: ChatMessageInsert = {
+            channel_id: channelId,
+            sender_id: user.id,
+            content,
+            sender_payload: {
+                name: studentProfile.name,
+                avatar_url: studentProfile.avatar_url,
+            },
+        };
 
-            const tempInput = messageInput;
-            setMessageInput('');
+        const tempId = `temp-${Date.now()}`;
+        const optimisticMsg: ChatMessage = {
+            id: tempId,
+            content,
+            timestamp: new Date().toISOString(),
+            sender: {
+                id: user.id,
+                name: studentProfile.name,
+                avatar_url: studentProfile.avatar_url,
+            },
+        };
 
-            try {
-                await insertMessage(messagePayload);
-            } catch (err) {
-                setError('Failed to send message.');
-                setMessageInput(tempInput);
+        setMessageInput('');
+        setMessages(prev => [...prev, optimisticMsg]);
+
+        try {
+            const inserted = await insertMessage(messagePayload);
+            if (inserted) {
+                setMessages(prev => prev.map(m => m.id === tempId ? dbRowToChatMessage(inserted) : m));
             }
+        } catch (err) {
+            setMessages(prev => prev.filter(m => m.id !== tempId));
+            setMessageInput(content);
+            setError('Failed to send message.');
         }
     };
 

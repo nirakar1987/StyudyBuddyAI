@@ -200,17 +200,21 @@ export async function getMessages(channelId: string): Promise<ChatMessageRow[]> 
 
 /**
  * Inserts a new message into the chat_messages table.
+ * Returns the inserted row so the UI can show it immediately (real-time style).
  * @param message - The message data to insert.
  */
-export async function insertMessage(message: ChatMessageInsert) {
-  const { error } = await supabase!
+export async function insertMessage(message: ChatMessageInsert): Promise<ChatMessageRow | null> {
+  const { data, error } = await supabase!
     .from('chat_messages')
-    .insert(message);
+    .insert(message)
+    .select()
+    .single();
 
   if (error) {
     console.error('Error inserting chat message:', JSON.stringify(error, null, 2));
     throw error;
   }
+  return data as ChatMessageRow;
 }
 
 // --- Parent notifications (Telegram link codes). Requires table: parent_link_codes (code text primary key, user_id uuid references auth.users(id), expires_at timestamptz)
