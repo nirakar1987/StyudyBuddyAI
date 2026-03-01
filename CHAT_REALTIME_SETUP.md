@@ -20,7 +20,27 @@ After this, the existing Realtime subscription in the app will receive INSERTs o
 
 ---
 
-## Tables and RLS
+## Tables and RLS (required for history after refresh)
 
 - **chat_messages** – `id`, `channel_id`, `sender_id`, `content`, `sender_payload` (jsonb), `created_at`.
-- RLS must allow **SELECT** and **INSERT** for authenticated users (e.g. allow SELECT for messages in channels the user is in; allow INSERT for own messages).
+
+**If after refresh you only see new messages (no old history), RLS is likely blocking SELECT.** Run this in Supabase **SQL Editor**:
+
+```sql
+-- Allow authenticated users to read all messages in community chat or in a DM they're part of
+CREATE POLICY "Users can read chat messages in their channels"
+ON chat_messages FOR SELECT
+TO authenticated
+USING (
+  channel_id = 'community-chat'
+  OR (channel_id LIKE 'dm-%' AND position(auth.uid()::text in channel_id) > 0)
+);
+
+-- Allow authenticated users to send messages (insert)
+CREATE POLICY "Users can insert own chat messages"
+ON chat_messages FOR INSERT
+TO authenticated
+WITH CHECK (auth.uid() = sender_id);
+```
+
+If policies already exist with different names, drop them first or adjust the names. After this, **full history** loads on refresh and polling keeps new messages in sync.

@@ -183,12 +183,16 @@ export async function clearQuizHistory(): Promise<void> {
  * @param channelId - The ID of the chat channel.
  * @returns A list of chat messages.
  */
+/** Max messages to load per channel so history is fully visible after refresh */
+const CHAT_HISTORY_LIMIT = 500;
+
 export async function getMessages(channelId: string): Promise<ChatMessageRow[]> {
   const { data, error } = await supabase!
     .from('chat_messages')
     .select('*')
     .eq('channel_id', channelId)
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: true })
+    .limit(CHAT_HISTORY_LIMIT);
 
   if (error) {
     console.error('Error fetching chat messages:', JSON.stringify(error, null, 2));

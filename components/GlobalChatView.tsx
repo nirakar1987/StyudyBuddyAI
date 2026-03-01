@@ -61,9 +61,14 @@ const GlobalChatView: React.FC<{ context: AppContextType }> = ({ context }) => {
             : 'community-chat';
     }, [user, isDM, chatPartner]);
 
-    // Encapsulated connection logic into a single `setupChat` function.
+    // Load full history when channel is ready; then subscribe to realtime (WhatsApp-like).
     const setupChat = useCallback(async () => {
-        if (!supabase || !user || !studentProfile || !channelId) {
+        if (!supabase || !user || !channelId) {
+            setIsLoadingHistory(false);
+            return;
+        }
+        if (!studentProfile) {
+            setIsLoadingHistory(false);
             return;
         }
 
@@ -80,6 +85,7 @@ const GlobalChatView: React.FC<{ context: AppContextType }> = ({ context }) => {
             setMessages(historyRows.map(dbRowToChatMessage));
         } catch (err) {
             setError('Failed to load chat history.');
+            setMessages([]);
         } finally {
             setIsLoadingHistory(false);
         }
@@ -120,7 +126,7 @@ const GlobalChatView: React.FC<{ context: AppContextType }> = ({ context }) => {
 
         channelRef.current = channel;
 
-    }, [channelId, user?.id]);
+    }, [channelId, user?.id, studentProfile]);
 
     useEffect(() => {
         setupChat();
@@ -150,7 +156,7 @@ const GlobalChatView: React.FC<{ context: AppContextType }> = ({ context }) => {
                 });
             } catch (_) { /* ignore poll errors */ }
         };
-        const t = setInterval(poll, 3000);
+        const t = setInterval(poll, 2000);
         return () => clearInterval(t);
     }, [channelId, isLoadingHistory, error]);
 
