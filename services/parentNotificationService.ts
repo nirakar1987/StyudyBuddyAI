@@ -19,6 +19,16 @@ export interface PracticeActivityPayload {
   correct: boolean;
 }
 
+function escapeHTML(str: string): string {
+  if (!str) return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 /**
  * Builds a short, parent-friendly message for sharing (WhatsApp/Telegram copy).
  */
@@ -30,25 +40,31 @@ export function buildActivityMessage(
 
   if (eventType === 'quiz_complete' && 'total' in payload) {
     const p = payload as QuizActivityPayload;
+    const studentName = escapeHTML(p.studentName);
+    const subject = escapeHTML(p.subject);
     const pct = p.total ? Math.round((p.score / p.total) * 100) : 0;
-    const topicsStr = p.topics?.length ? `\n• <b>Topics:</b> ${p.topics.slice(0, 3).join(', ')}` : '';
+    const topicsList = p.topics?.map(escapeHTML).slice(0, 3).join(', ') || '';
+    const topicsStr = topicsList ? `\n• <b>Topics:</b> ${topicsList}` : '';
 
     return `${header}
 
-👤 <b>Student:</b> ${p.studentName}
-📝 <b>Activity:</b> Quiz - ${p.subject} (Grade ${p.grade})
+👤 <b>Student:</b> ${studentName}
+📝 <b>Activity:</b> Quiz - ${subject} (Grade ${p.grade})
 📊 <b>Result:</b> <b>${p.score}/${p.total}</b> (${pct}%) ${topicsStr}
 
 <i>Great progress for today!</i>`;
   } else if (eventType === 'practice_complete' && 'topic' in payload) {
     const p = payload as PracticeActivityPayload;
+    const studentName = escapeHTML(p.studentName);
+    const subject = escapeHTML(p.subject);
+    const topic = escapeHTML(p.topic);
     const status = p.correct ? '✅ <b>Correct!</b>' : '📝 <b>Reviewed</b> (AI feedback given)';
 
     return `${header}
 
-👤 <b>Student:</b> ${p.studentName}
+👤 <b>Student:</b> ${studentName}
 💡 <b>Activity:</b> Practice Problem
-📚 <b>Topic:</b> ${p.subject} – ${p.topic}
+📚 <b>Topic:</b> ${subject} – ${topic}
 🎯 <b>Status:</b> ${status}`;
   }
 
