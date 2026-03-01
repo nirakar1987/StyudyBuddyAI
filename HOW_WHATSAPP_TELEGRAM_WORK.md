@@ -40,6 +40,31 @@ Once the parent is linked via the bot, they get a Telegram message **automatical
 
 ---
 
+## Technical flow: quiz submit → Telegram
+
+1. **Student submits quiz**  
+   In the app, `App.tsx` → `handleSubmitQuiz()` runs when the student finishes the quiz.
+
+2. **Build message**  
+   The app builds a short summary with `buildActivityMessage('quiz_complete', { studentName, subject, grade, score, total, topics })` from `services/parentNotificationService.ts`.
+
+3. **Call Edge Function**  
+   The app calls `notifyParentViaTelegram(user.id, 'quiz_complete', summary)`, which invokes the Supabase Edge Function **notify-parent** with body: `{ userId, eventType: 'quiz_complete', summary }`.  
+   `userId` = the **student’s** Supabase auth id.
+
+4. **Edge Function (notify-parent)**  
+   - Reads `TELEGRAM_BOT_TOKEN` from Supabase secrets.  
+   - Uses the **service role** to load the student’s profile: `profiles.parent_telegram_chat_id` (and name) for that `userId`.  
+   - If `parent_telegram_chat_id` is set (parent linked via the bot), it sends the message to Telegram’s `sendMessage` API for that chat id.  
+   - Optional: if `ADMIN_TELEGRAM_CHAT_ID` is set in secrets, a copy is sent to the admin.
+
+5. **Parent receives**  
+   The parent gets a Telegram message from your bot with the quiz result (student name, subject, score, topics).
+
+**Requirement:** The student’s profile must have `parent_telegram_chat_id` set. That happens when the parent sends `/start CODE` to your bot and the **telegram-webhook** Edge Function runs, which looks up the code in `parent_link_codes`, finds the student’s `user_id`, and updates `profiles.parent_telegram_chat_id` for that user.
+
+---
+
 ## Summary
 
 | What                | How                                        |
