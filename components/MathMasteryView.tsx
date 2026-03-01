@@ -532,6 +532,13 @@ const MathMasteryView: React.FC<MathMasteryViewProps> = ({ context }) => {
                             onClick={() => setActiveSection('visual')}
                         />
                         <MathFeatureCard
+                            icon="🧠"
+                            title="Mental Math"
+                            description="Speed test — beat your best!"
+                            gradient="from-yellow-500 to-orange-600"
+                            onClick={() => { setActiveSection('games'); setActiveGame('speed'); }}
+                        />
+                        <MathFeatureCard
                             icon="🎮"
                             title="Math Games"
                             description="Learn while having fun"
