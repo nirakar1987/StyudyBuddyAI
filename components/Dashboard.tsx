@@ -193,6 +193,7 @@ const Dashboard: React.FC<DashboardProps> = ({ context }) => {
                     {[
                         { icon: <span className="text-4xl">👑</span>, label: "Daily Quest", emoji: "✨", gradient: "from-yellow-400 to-orange-500", onClick: () => setAppState(AppState.DAILY_CHALLENGE) },
                         { icon: <ChartBarIcon className="w-10 h-10" />, label: "Ranking", emoji: "🏆", gradient: "from-indigo-500 to-purple-600", onClick: () => setAppState(AppState.LEADERBOARD) },
+                        { icon: <span className="text-4xl">📕</span>, label: "Mistakes", emoji: "❌", gradient: "from-red-600 to-rose-700", onClick: () => setAppState(AppState.MISTAKE_REVISION) },
                         { icon: <span className="text-4xl">📸</span>, label: "Scan HW", emoji: "🔍", gradient: "from-amber-500 to-orange-600", onClick: () => setAppState(AppState.HOMEWORK_SCANNER) },
                         { icon: <span className="text-4xl">📋</span>, label: "NCERT", emoji: "📚", gradient: "from-emerald-500 to-teal-600", onClick: () => setAppState(AppState.NCERT_SOLUTIONS) },
                         { icon: <span className="text-4xl">📝</span>, label: "Revise", emoji: "🔄", gradient: "from-violet-500 to-purple-600", onClick: () => setAppState(AppState.REVISION_CARDS) },
