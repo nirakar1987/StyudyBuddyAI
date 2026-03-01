@@ -192,6 +192,7 @@ const Dashboard: React.FC<DashboardProps> = ({ context }) => {
                         { icon: <GlobeAltIcon className="w-10 h-10" />, label: "Time Travel", emoji: "🕰️", gradient: "from-fuchsia-600 to-purple-800", onClick: () => setAppState(AppState.TIME_TRAVEL) },
                         { icon: <ShoppingBagIcon className="w-10 h-10" />, label: "Store", emoji: "🛍️", gradient: "from-yellow-500 to-amber-600", onClick: () => setAppState(AppState.POINT_SHOP) },
                         { icon: <span className="text-4xl">🕵️‍♂️</span>, label: "Patterns", emoji: "🔍", gradient: "from-cyan-700 to-blue-900", onClick: () => setAppState(AppState.PATTERN_DETECTIVE) },
+                        { icon: <span className="text-4xl">📱</span>, label: "Parent", emoji: "📲", gradient: "from-emerald-600 to-teal-700", onClick: () => setAppState(AppState.PARENT_NOTIFICATIONS) },
                     ].map((action, index) => (
                         <ActionCardBento
                             key={action.label}

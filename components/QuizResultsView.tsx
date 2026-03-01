@@ -7,6 +7,7 @@ import { EnvelopeIcon } from './icons/EnvelopeIcon';
 import { ArrowDownTrayIcon } from './icons/ArrowDownTrayIcon';
 import { useSoundEffects } from '../hooks/useSoundEffects';
 import { generateAnswerExplanation } from '../services/geminiService';
+import { buildActivityMessage, getWhatsAppShareUrl, copyToClipboard } from '../services/parentNotificationService';
 import { LightBulbIcon } from './icons/LightBulbIcon';
 
 interface QuizResultsViewProps {
@@ -14,7 +15,7 @@ interface QuizResultsViewProps {
 }
 
 const QuizResultsView: React.FC<QuizResultsViewProps> = ({ context }) => {
-    const { generatedQuiz, userAnswers, quizScore, quizResults, setAppState, regenerateQuiz, lastUploadedFiles, lastModuleCompleted } = context;
+    const { generatedQuiz, userAnswers, quizScore, quizResults, setAppState, regenerateQuiz, lastUploadedFiles, lastModuleCompleted, studentProfile } = context;
     const questions = generatedQuiz?.questions || [];
     const [parentEmail, setParentEmail] = useState('');
     const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
@@ -22,6 +23,18 @@ const QuizResultsView: React.FC<QuizResultsViewProps> = ({ context }) => {
     const [soundPlayed, setSoundPlayed] = useState(false);
     const [explanations, setExplanations] = useState<Record<number, string | null>>({});
     const [loadingExplanation, setLoadingExplanation] = useState<number | null>(null);
+    const [shareToast, setShareToast] = useState<string | null>(null);
+
+    const parentShareMessage = studentProfile && quizScore && generatedQuiz
+        ? buildActivityMessage('quiz_complete', {
+            studentName: studentProfile.name,
+            subject: studentProfile.subject,
+            grade: studentProfile.grade,
+            score: quizScore.score,
+            total: quizScore.total,
+            topics: generatedQuiz.topics,
+        })
+        : '';
 
     useEffect(() => {
         if (lastModuleCompleted && !soundPlayed) {
@@ -197,6 +210,31 @@ const QuizResultsView: React.FC<QuizResultsViewProps> = ({ context }) => {
                                 {emailStatus === 'sent' && 'Sent!'}
                             </button>
                         </div>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                        <label className="block text-sm font-medium text-slate-300 mb-1">Send to parent (WhatsApp / Telegram)</label>
+                        <div className="flex flex-wrap gap-2">
+                            <button
+                                onClick={() => {
+                                    if (parentShareMessage) window.open(getWhatsAppShareUrl(parentShareMessage, studentProfile?.parent_phone), '_blank');
+                                }}
+                                className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg font-semibold text-sm transition-colors active:scale-95"
+                            >
+                                <span>📲</span> Share to WhatsApp
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    if (parentShareMessage && (await copyToClipboard(parentShareMessage))) {
+                                        setShareToast('Copied! Paste in Telegram to send to parent.');
+                                        setTimeout(() => setShareToast(null), 3000);
+                                    }
+                                }}
+                                className="flex items-center justify-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 rounded-lg font-semibold text-sm transition-colors active:scale-95"
+                            >
+                                <span>✈️</span> Copy for Telegram
+                            </button>
+                        </div>
+                        {shareToast && <p className="text-sm text-green-400">{shareToast}</p>}
                     </div>
                     <div className="flex-1 flex flex-col justify-end">
                         <label className="block text-sm font-medium text-slate-300 mb-1">Save results for offline review</label>

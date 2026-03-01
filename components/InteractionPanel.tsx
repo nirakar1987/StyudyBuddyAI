@@ -30,8 +30,7 @@ import BookQuizView from './BookQuizView';
 import FlashcardsView from './FlashcardsView';
 import PointShopView from './PointShopView';
 import PatternDetectiveView from './PatternDetectiveView';
-
-
+import ParentNotificationsView from './ParentNotificationsView';
 interface InteractionPanelProps {
   context: AppContextType;
 }
@@ -96,6 +95,8 @@ const InteractionPanel: React.FC<InteractionPanelProps> = ({ context }) => {
         return <PointShopView context={context} />;
       case AppState.PATTERN_DETECTIVE:
         return <PatternDetectiveView context={context} />;
+      case AppState.PARENT_NOTIFICATIONS:
+        return <ParentNotificationsView context={context} />;
       default:
         return <Dashboard context={context} />;
     }

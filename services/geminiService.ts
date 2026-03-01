@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type, Chat, GenerateContentResponse } from "@google/genai";
-import { GeneratedQuiz, StudentProfile, ChatMessage, ChatPart, PracticeProblem, ProblemFeedback, GeneratedQuestion, VideoData } from "../types";
+import { GeneratedQuiz, StudentProfile, ChatMessage, ChatPart, PracticeProblem, ProblemFeedback, GeneratedQuestion, VideoData, SchoolProject, ProjectMilestone } from "../types";
 import { LEARNING_MODULES } from '../data/modules';
 import { withRetry } from '../utils/apiRetry';
 import { safeJsonParse } from '../utils/safeJsonParse';
@@ -643,6 +643,66 @@ export async function generateStudyPlan(
       },
     }));
     return safeJsonParse(response.text, "Failed to generate study plan.");
+  } catch (error) {
+    throw new Error(handleApiError(error));
+  }
+}
+
+export async function generateProjectOutline(
+  project: Pick<SchoolProject, 'title' | 'description' | 'type' | 'subject'>,
+  profile: StudentProfile
+): Promise<{ outline: string; milestones: Omit<ProjectMilestone, 'id'>[] }> {
+  const ai = getAiClient();
+  const prompt = `Create a project plan for a school project.
+  Title: ${project.title}
+  Description: ${project.description}
+  Type: ${project.type}
+  Subject: ${project.subject}
+  Student: Grade ${profile.grade}, studying ${profile.subject}.
+
+  Return a JSON object with:
+  - "outline": A 2-4 sentence overview of how to approach this project.
+  - "milestones": An array of 4-6 steps/phases. Each object has: "title" (string), "description" (string, 1-2 sentences), "completed" (boolean, always false).
+
+  Make milestones practical and age-appropriate.`;
+
+  try {
+    const response = await withRetry(() => ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: [{ parts: [{ text: prompt }] }],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            outline: { type: Type.STRING },
+            milestones: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  title: { type: Type.STRING },
+                  description: { type: Type.STRING },
+                  completed: { type: Type.BOOLEAN }
+                },
+                required: ["title", "description", "completed"]
+              }
+            }
+          },
+          required: ["outline", "milestones"]
+        }
+      },
+    }));
+    const parsed = safeJsonParse<{ outline: string; milestones: { title: string; description: string; completed: boolean }[] }>(
+      response.text,
+      "Failed to generate project outline."
+    );
+    const milestones: Omit<ProjectMilestone, 'id'>[] = (parsed.milestones || []).map(m => ({
+      title: m.title,
+      description: m.description,
+      completed: m.completed ?? false,
+    }));
+    return { outline: parsed.outline || '', milestones };
   } catch (error) {
     throw new Error(handleApiError(error));
   }

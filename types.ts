@@ -32,6 +32,8 @@ export enum AppState {
   FLASHCARDS,
   POINT_SHOP,
   PATTERN_DETECTIVE,
+  SCHOOL_PROJECTS,
+  PARENT_NOTIFICATIONS,
 }
 
 export enum AvatarState {
@@ -39,6 +41,14 @@ export enum AvatarState {
   LISTENING = 'LISTENING',
   THINKING = 'THINKING',
   SPEAKING = 'SPEAKING',
+}
+
+/** Parent notification: Telegram (auto) and/or WhatsApp (share). */
+export interface ParentNotificationPrefs {
+  /** Telegram chat_id once parent links via bot. */
+  parent_telegram_chat_id?: string | null;
+  /** Parent phone (e.g. 91XXXXXXXXXX) for "Share to WhatsApp". */
+  parent_phone?: string | null;
 }
 
 export interface StudentProfile {
@@ -55,7 +65,17 @@ export interface StudentProfile {
   avatar_url?: string;
   purchased_items?: string[];
   active_items?: string[];
+  /** Parent gets activity updates via Telegram/WhatsApp when set. */
+  parent_telegram_chat_id?: string | null;
+  parent_phone?: string | null;
 }
+
+/** Event types we can send to parent (Telegram or share text). */
+export type ParentNotificationEventType =
+  | 'quiz_complete'
+  | 'practice_complete'
+  | 'lesson_progress'
+  | 'daily_summary';
 
 export enum QuestionType {
   MCQ = 'Multiple Choice',
@@ -132,6 +152,29 @@ export interface VideoData {
   title: string;
   description: string;
   thumbnailUrl: string;
+}
+
+export type ProjectType = 'Research' | 'Presentation' | 'Science' | 'Art' | 'Essay' | 'Other';
+
+export interface ProjectMilestone {
+  id: string;
+  title: string;
+  description?: string;
+  dueDate?: string;
+  completed: boolean;
+}
+
+export interface SchoolProject {
+  id: string;
+  title: string;
+  description: string;
+  type: ProjectType;
+  subject: string;
+  dueDate: string;
+  milestones: ProjectMilestone[];
+  aiOutline?: string;
+  notes?: string;
+  createdAt: string;
 }
 
 

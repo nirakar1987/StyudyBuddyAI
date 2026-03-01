@@ -11,6 +11,7 @@ import { LEARNING_MODULES } from './data/modules';
 import LandingPageView from './components/LandingPageView';
 import { supabase, isSupabaseConfigured } from './services/supabaseClient';
 import { getProfile, upsertProfile, addQuizAttempt } from './services/databaseService';
+import { notifyParentViaTelegram, buildActivityMessage } from './services/parentNotificationService';
 import UserPresence from './components/UserPresence';
 import ChatNotificationPopup from './components/ChatNotificationPopup';
 import MobileNav from './components/MobileNav';
@@ -421,6 +422,15 @@ const App: React.FC = () => {
 
       setAppState(AppState.QUIZ_RESULTS);
       addToast('Quiz submitted successfully!', 'success');
+      const summary = buildActivityMessage('quiz_complete', {
+        studentName: studentProfile.name,
+        subject: studentProfile.subject,
+        grade: studentProfile.grade,
+        score: correctCount,
+        total: generatedQuiz.questions.length,
+        topics: quizTopics,
+      });
+      notifyParentViaTelegram(user.id, 'quiz_complete', summary).catch(() => {});
     } catch (error: any) {
       console.error("Error submitting quiz:", JSON.stringify(error, null, 2));
       setSubmissionError("An error occurred while submitting your quiz. Please try again.");

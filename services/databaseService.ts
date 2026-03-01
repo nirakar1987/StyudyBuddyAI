@@ -50,6 +50,8 @@ export async function getProfile(userId: string): Promise<StudentProfile | null>
       name: data.full_name || '', // Read from the new 'full_name' database column.
       topic_performance: typeof data.topic_performance === 'string' ? JSON.parse(data.topic_performance) : data.topic_performance || {},
       completed_modules: typeof data.completed_modules === 'string' ? JSON.parse(data.completed_modules) : data.completed_modules || [],
+      parent_telegram_chat_id: data.parent_telegram_chat_id ?? null,
+      parent_phone: data.parent_phone ?? null,
     };
   }
   return null;
@@ -60,9 +62,9 @@ export async function getProfile(userId: string): Promise<StudentProfile | null>
  * @param profile - The profile data to save.
  */
 export async function upsertProfile(profile: StudentProfile & { id: string }) {
-  const profileData = {
+  const profileData: Record<string, unknown> = {
       id: profile.id,
-      full_name: profile.name, // Save the name to the new 'full_name' database column.
+      full_name: profile.name,
       grade: profile.grade,
       subject: profile.subject,
       topic_performance: JSON.stringify(profile.topic_performance || {}),
@@ -71,9 +73,9 @@ export async function upsertProfile(profile: StudentProfile & { id: string }) {
       completed_modules: JSON.stringify(profile.completed_modules || []),
       theme: profile.theme,
       avatar_style: profile.avatar_style,
-      // avatar_url is intentionally omitted as it's not in the DB schema.
-      // It is persisted in localStorage instead (see App.tsx).
   };
+  if (profile.parent_telegram_chat_id !== undefined) profileData.parent_telegram_chat_id = profile.parent_telegram_chat_id;
+  if (profile.parent_phone !== undefined) profileData.parent_phone = profile.parent_phone;
 
   const { error } = await supabase!
     .from('profiles')
@@ -204,4 +206,44 @@ export async function insertMessage(message: ChatMessageInsert) {
         console.error('Error inserting chat message:', JSON.stringify(error, null, 2));
         throw error;
     }
+}
+
+// --- Parent notifications (Telegram link codes). Requires table: parent_link_codes (code text primary key, user_id uuid references auth.users(id), expires_at timestamptz)
+
+const LINK_CODE_TTL_MINUTES = 15;
+
+export async function createParentLinkCode(userId: string): Promise<string> {
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  const expiresAt = new Date(Date.now() + LINK_CODE_TTL_MINUTES * 60 * 1000).toISOString();
+  const { error } = await supabase!
+    .from('parent_link_codes')
+    .upsert({ code, user_id: userId, expires_at: expiresAt }, { onConflict: 'code' });
+  if (error) {
+    console.error('Error creating parent link code:', error);
+    throw error;
+  }
+  return code;
+}
+
+export async function getUserIdByLinkCode(code: string): Promise<string | null> {
+  const { data, error } = await supabase!
+    .from('parent_link_codes')
+    .select('user_id, expires_at')
+    .eq('code', code.trim())
+    .single();
+  if (error || !data) return null;
+  if (new Date(data.expires_at) < new Date()) return null;
+  return data.user_id;
+}
+
+export async function linkParentTelegram(userId: string, telegramChatId: string): Promise<void> {
+  const { error } = await supabase!
+    .from('profiles')
+    .update({ parent_telegram_chat_id: telegramChatId })
+    .eq('id', userId);
+  if (error) throw error;
+}
+
+export async function clearParentLinkCode(code: string): Promise<void> {
+  await supabase!.from('parent_link_codes').delete().eq('code', code.trim());
 }

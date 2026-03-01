@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { AppContextType, AvatarState } from '../types';
 import { generatePracticeProblem, evaluatePracticeAnswer, generateProblemSolution } from '../services/geminiService';
+import { notifyParentViaTelegram, buildActivityMessage } from '../services/parentNotificationService';
 import { SparklesIcon } from './icons/SparklesIcon';
 import { CheckIcon } from './icons/CheckIcon';
 import { ArrowPathIcon } from './icons/ArrowPathIcon';
@@ -13,6 +14,7 @@ interface PracticeViewProps {
 
 const PracticeView: React.FC<PracticeViewProps> = ({ context }) => {
     const {
+        user,
         studentProfile,
         setAvatarState,
         setScore,
@@ -68,6 +70,15 @@ const PracticeView: React.FC<PracticeViewProps> = ({ context }) => {
             if (feedback.isCorrect) {
                 playCorrectSound();
                 await setScore(prev => prev + 50); // Award points for correct answer
+                if (user?.id && studentProfile?.name) {
+                    const summary = buildActivityMessage('practice_complete', {
+                        studentName: studentProfile.name,
+                        subject: studentProfile.subject,
+                        topic: practiceProblem.topic,
+                        correct: true,
+                    });
+                    notifyParentViaTelegram(user.id, 'practice_complete', summary).catch(() => {});
+                }
             } else {
                 playIncorrectSound();
             }
