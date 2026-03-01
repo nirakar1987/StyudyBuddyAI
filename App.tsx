@@ -437,7 +437,9 @@ const App: React.FC = () => {
         total: generatedQuiz.questions.length,
         topics: quizTopics,
       });
-      notifyParentViaTelegram(user.id, 'quiz_complete', summary).catch(() => {});
+      notifyParentViaTelegram(user.id, 'quiz_complete', summary)
+        .then(() => console.log('✅ Parent notification sent successfully'))
+        .catch((err) => console.error('❌ Parent notification failed:', err));
     } catch (error: any) {
       console.error("Error submitting quiz:", JSON.stringify(error, null, 2));
       setSubmissionError("An error occurred while submitting your quiz. Please try again.");
