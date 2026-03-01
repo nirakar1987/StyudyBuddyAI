@@ -64,6 +64,22 @@ const Dashboard: React.FC<DashboardProps> = ({ context }) => {
 
     return (
         <div className="flex flex-col h-full overflow-y-auto pb-8">
+            {/* Parent / WhatsApp / Telegram – FIRST so it’s always visible */}
+            <div
+                onClick={() => setAppState(AppState.PARENT_NOTIFICATIONS)}
+                onMouseEnter={playHoverSound}
+                className="mb-6 p-4 rounded-2xl border-2 border-emerald-500/60 bg-gradient-to-r from-emerald-900/50 to-teal-900/50 cursor-pointer transition-all flex flex-wrap items-center justify-between gap-4 shadow-lg"
+            >
+                <div className="flex items-center gap-4">
+                    <span className="text-4xl">📱</span>
+                    <div>
+                        <h3 className="text-lg font-bold text-white">Send activity to parent</h3>
+                        <p className="text-sm text-slate-300">Set up WhatsApp or Telegram. Parents can also sign in with their own account.</p>
+                    </div>
+                </div>
+                <span className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm whitespace-nowrap">Set up WhatsApp / Telegram →</span>
+            </div>
+
             {/* Hero Section with Animated Gradient */}
             <div className="relative mb-8 animate-fade-in group">
                 {/* Animated gradient background */}
@@ -134,24 +150,6 @@ const Dashboard: React.FC<DashboardProps> = ({ context }) => {
                     </div>
                     <SparklesIcon className="absolute -right-8 -bottom-8 w-48 h-48 text-white/10 rotate-12 animate-float" />
                 </div>
-            </div>
-
-            {/* Parent notifications – WhatsApp & Telegram (prominent) */}
-            <div
-                onClick={() => setAppState(AppState.PARENT_NOTIFICATIONS)}
-                onMouseEnter={playHoverSound}
-                className="mb-6 p-4 rounded-2xl border-2 border-emerald-500/50 bg-gradient-to-r from-emerald-900/40 to-teal-900/40 hover:from-emerald-800/50 hover:to-teal-800/50 cursor-pointer transition-all flex flex-wrap items-center justify-between gap-4"
-            >
-                <div className="flex items-center gap-4">
-                    <span className="text-4xl">📱</span>
-                    <div>
-                        <h3 className="text-lg font-bold text-white">Send activity to parent</h3>
-                        <p className="text-sm text-slate-300">Set up WhatsApp or Telegram so your parent gets updates when you complete quizzes or practice.</p>
-                    </div>
-                </div>
-                <button className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm whitespace-nowrap">
-                    Set up WhatsApp / Telegram →
-                </button>
             </div>
 
             {/* Stats Cards with Enhanced Glassmorphism */}

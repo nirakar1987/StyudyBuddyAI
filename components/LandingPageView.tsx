@@ -205,6 +205,9 @@ const LandingPageView: React.FC<{ context: AppContextType }> = ({ context }) => 
         <p className="mt-3 text-xs text-[var(--color-text-muted)] animate-fade-in" style={{ animationDelay: '550ms' }}>
           🔊 Click anywhere to enable sound effects
         </p>
+        <p className="mt-4 text-sm text-[var(--color-text-muted)] animate-fade-in" style={{ animationDelay: '600ms' }}>
+          👨‍👩‍👧 <strong className="text-[var(--color-text-secondary)]">Parents:</strong> Sign in, then choose <strong>Parent</strong> when creating your profile to see your child&apos;s activity and set up WhatsApp/Telegram.
+        </p>
 
         {/* Features Section */}
         <div className="mt-16 pt-8 w-full border-t border-[var(--color-border)] animate-fade-in" style={{ animationDelay: '700ms' }}>
