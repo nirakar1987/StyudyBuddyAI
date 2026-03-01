@@ -58,6 +58,8 @@ const AuthView: React.FC<AuthViewProps> = ({ context }) => {
         setLoading(true);
         setError(null);
         try {
+            // Must match a URL in Supabase Auth → URL Configuration → Redirect URLs (e.g. https://studybuddyclasses.vercel.app)
+            const redirectTo = (window.location.origin || '').replace(/\/$/, '');
             const { error } = await supabase!.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
@@ -65,7 +67,7 @@ const AuthView: React.FC<AuthViewProps> = ({ context }) => {
                         access_type: 'offline',
                         prompt: 'consent',
                     },
-                    redirectTo: window.location.origin,
+                    redirectTo: redirectTo || window.location.origin,
                 },
             });
             if (error) throw error;
