@@ -1491,3 +1491,54 @@ export async function checkChallengeAnswer(question: string, userAnswer: string,
     throw new Error(handleApiError(error));
   }
 }
+
+// --- AI Career Counselor ---
+
+export interface CareerPath {
+  title: string;
+  description: string;
+  why: string;
+  roadmap: string[];
+  skillsToDevelop: string[];
+  funFact: string;
+}
+
+export async function generateCareerPath(grade: number, interests: string, topSubjects: string[]): Promise<CareerPath> {
+  const ai = getAiClient();
+  const prompt = `You are an AI Career Counselor for kids. 
+    A student in Class ${grade} is interested in: "${interests}".
+    Their top subjects are: ${topSubjects.join(', ')}.
+    
+    Predict 1 most suitable, exciting, and futuristic career for them. 
+    Provide a detailed roadmap to achieve it.
+    
+    Be extremely encouraging and make it sound like an adventure! 🚀
+    Include 'why' this fits them, a 'roadmap' of 4-5 steps, and specific 'skillsToDevelop'.
+    Add a 'funFact' about this career in the future (e.g. "By 2040, Space Architects will be designing cities on Mars!").`;
+
+  try {
+    const response = await withRetry(() => ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: [{ parts: [{ text: prompt }] }],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            title: { type: Type.STRING },
+            description: { type: Type.STRING },
+            why: { type: Type.STRING },
+            roadmap: { type: Type.ARRAY, items: { type: Type.STRING } },
+            skillsToDevelop: { type: Type.ARRAY, items: { type: Type.STRING } },
+            funFact: { type: Type.STRING }
+          },
+          required: ["title", "description", "why", "roadmap", "skillsToDevelop", "funFact"]
+        }
+      }
+    }));
+
+    return safeJsonParse<CareerPath>(response.text, "Failed to generate career path.");
+  } catch (error) {
+    throw new Error(handleApiError(error));
+  }
+}

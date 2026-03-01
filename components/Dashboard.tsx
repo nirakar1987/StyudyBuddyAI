@@ -210,6 +210,7 @@ const Dashboard: React.FC<DashboardProps> = ({ context }) => {
                         { icon: <BookOpenIcon className="w-10 h-10" />, label: "Book Quiz", emoji: "📚", gradient: "from-indigo-600 to-blue-700", onClick: () => setAppState(AppState.BOOK_QUIZ) },
                         { icon: <UsersIcon className="w-10 h-10" />, label: "Challenges", emoji: "🏆", gradient: "from-teal-600 to-cyan-600", onClick: () => setAppState(AppState.MULTIPLAYER_CHALLENGE) },
                         { icon: <ShoppingBagIcon className="w-10 h-10" />, label: "Store", emoji: "🛍️", gradient: "from-yellow-500 to-amber-600", onClick: () => setAppState(AppState.POINT_SHOP) },
+                        { icon: <span className="text-4xl">🚀</span>, label: "Future", emoji: "🔮", gradient: "from-indigo-600 to-blue-900", onClick: () => setAppState(AppState.CAREER_COUNSELOR) },
                         { icon: <span className="text-4xl">🕵️‍♂️</span>, label: "Patterns", emoji: "🔍", gradient: "from-cyan-700 to-blue-900", onClick: () => setAppState(AppState.PATTERN_DETECTIVE) },
                     ].map((action, index) => (
                         <ActionCardBento

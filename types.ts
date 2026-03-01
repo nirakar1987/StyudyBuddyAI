@@ -47,6 +47,7 @@ export enum AppState {
   LEADERBOARD,
   DAILY_CHALLENGE,
   MISTAKE_REVISION,
+  CAREER_COUNSELOR,
 }
 
 export enum AvatarState {
