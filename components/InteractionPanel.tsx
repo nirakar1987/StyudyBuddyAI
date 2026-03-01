@@ -32,6 +32,8 @@ import ParentNotificationsView from './ParentNotificationsView';
 import HomeworkScannerView from './HomeworkScannerView';
 import NCERTSolutionsView from './NCERTSolutionsView';
 import RevisionCardsView from './RevisionCardsView';
+import LeaderboardView from './LeaderboardView';
+import DailyChallengeView from './DailyChallengeView';
 interface InteractionPanelProps {
   context: AppContextType;
 }
@@ -100,6 +102,10 @@ const InteractionPanel: React.FC<InteractionPanelProps> = ({ context }) => {
         return <NCERTSolutionsView context={context} />;
       case AppState.REVISION_CARDS:
         return <RevisionCardsView context={context} />;
+      case AppState.LEADERBOARD:
+        return <LeaderboardView context={context} />;
+      case AppState.DAILY_CHALLENGE:
+        return <DailyChallengeView context={context} />;
       default:
         return <Dashboard context={context} />;
     }

@@ -3,26 +3,26 @@ import { StudentProfile, QuizAttempt, ParentProfile, LinkedChild } from '../type
 
 // New type for chat message insertion
 export interface ChatMessageInsert {
-    channel_id: string;
-    sender_id: string;
-    content: string;
-    sender_payload: {
-        name: string;
-        avatar_url?: string;
-    };
+  channel_id: string;
+  sender_id: string;
+  content: string;
+  sender_payload: {
+    name: string;
+    avatar_url?: string;
+  };
 }
 
 // New type for a row from the chat_messages table
 export interface ChatMessageRow {
-    id: string;
-    created_at: string;
-    channel_id: string;
-    sender_id: string;
-    content: string;
-    sender_payload: {
-        name: string;
-        avatar_url?: string;
-    };
+  id: string;
+  created_at: string;
+  channel_id: string;
+  sender_id: string;
+  content: string;
+  sender_payload: {
+    name: string;
+    avatar_url?: string;
+  };
 }
 
 
@@ -67,17 +67,17 @@ export async function getProfile(userId: string): Promise<StudentProfile | null>
  */
 export async function upsertProfile(profile: StudentProfile & { id: string }) {
   const profileData: Record<string, unknown> = {
-      id: profile.id,
-      full_name: profile.name,
-      grade: profile.grade,
-      subject: profile.subject,
-      topic_performance: JSON.stringify(profile.topic_performance || {}),
-      score: profile.score ?? 0,
-      streak: profile.streak ?? 1,
-      completed_modules: JSON.stringify(profile.completed_modules || []),
-      theme: profile.theme,
-      avatar_style: profile.avatar_style,
-      role: (profile as any).role ?? 'student',
+    id: profile.id,
+    full_name: profile.name,
+    grade: profile.grade,
+    subject: profile.subject,
+    topic_performance: JSON.stringify(profile.topic_performance || {}),
+    score: profile.score ?? 0,
+    streak: profile.streak ?? 1,
+    completed_modules: JSON.stringify(profile.completed_modules || []),
+    theme: profile.theme,
+    avatar_style: profile.avatar_style,
+    role: (profile as any).role ?? 'student',
   };
   if (profile.parent_telegram_chat_id !== undefined) profileData.parent_telegram_chat_id = profile.parent_telegram_chat_id;
   if (profile.parent_phone !== undefined) profileData.parent_phone = profile.parent_phone;
@@ -85,7 +85,7 @@ export async function upsertProfile(profile: StudentProfile & { id: string }) {
   const { error } = await supabase!
     .from('profiles')
     .upsert(profileData);
-    
+
   if (error) {
     console.error('Error upserting profile:', JSON.stringify(error, null, 2));
     throw error;
@@ -135,7 +135,7 @@ export async function getQuizHistory(userId: string): Promise<QuizAttempt[]> {
     console.error('Error getting quiz history:', JSON.stringify(error, null, 2));
     throw error;
   }
-  
+
   if (data) {
     // Safely parse fields that are stored as JSON strings
     return data.map(attempt => ({
@@ -184,18 +184,18 @@ export async function clearQuizHistory(): Promise<void> {
  * @returns A list of chat messages.
  */
 export async function getMessages(channelId: string): Promise<ChatMessageRow[]> {
-    const { data, error } = await supabase!
-        .from('chat_messages')
-        .select('*')
-        .eq('channel_id', channelId)
-        .order('created_at', { ascending: true });
+  const { data, error } = await supabase!
+    .from('chat_messages')
+    .select('*')
+    .eq('channel_id', channelId)
+    .order('created_at', { ascending: true });
 
-    if (error) {
-        console.error('Error fetching chat messages:', JSON.stringify(error, null, 2));
-        throw error;
-    }
-    
-    return data || [];
+  if (error) {
+    console.error('Error fetching chat messages:', JSON.stringify(error, null, 2));
+    throw error;
+  }
+
+  return data || [];
 }
 
 /**
@@ -203,14 +203,14 @@ export async function getMessages(channelId: string): Promise<ChatMessageRow[]> 
  * @param message - The message data to insert.
  */
 export async function insertMessage(message: ChatMessageInsert) {
-    const { error } = await supabase!
-        .from('chat_messages')
-        .insert(message);
-        
-    if (error) {
-        console.error('Error inserting chat message:', JSON.stringify(error, null, 2));
-        throw error;
-    }
+  const { error } = await supabase!
+    .from('chat_messages')
+    .insert(message);
+
+  if (error) {
+    console.error('Error inserting chat message:', JSON.stringify(error, null, 2));
+    throw error;
+  }
 }
 
 // --- Parent notifications (Telegram link codes). Requires table: parent_link_codes (code text primary key, user_id uuid references auth.users(id), expires_at timestamptz)
@@ -335,4 +335,60 @@ export async function getStudentIdByParentInviteCode(code: string): Promise<stri
 
 export async function consumeParentInviteCode(code: string): Promise<void> {
   await supabase!.from('parent_invite_codes').delete().eq('code', code.trim());
+}
+
+// --- Leaderboard & Rankings ---
+
+export async function getLeaderboard(limit: number = 10, type: 'status_points' | 'streak' = 'status_points', grade?: number) {
+  const field = type === 'status_points' ? 'score' : 'streak';
+  let query = supabase!
+    .from('profiles')
+    .select('id, full_name, avatar_style, score, streak, grade')
+    .eq('role', 'student');
+
+  if (grade) {
+    query = query.eq('grade', grade);
+  }
+
+  const { data, error } = await query
+    .order(field, { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('Error fetching leaderboard:', JSON.stringify(error, null, 2));
+    throw error;
+  }
+
+  return (data || []).map(p => ({
+    id: (p as any).id,
+    name: (p as any).full_name || 'Anonymous Student',
+    avatar_style: (p as any).avatar_style || 'fun',
+    score: (p as any).score ?? 0,
+    streak: (p as any).streak ?? 1,
+    grade: (p as any).grade
+  }));
+}
+
+export async function getStudentRank(userId: string, type: 'status_points' | 'streak' = 'status_points') {
+  const field = type === 'status_points' ? 'score' : 'streak';
+  const { data: profile, error: pError } = await supabase!
+    .from('profiles')
+    .select(field)
+    .eq('id', userId)
+    .single();
+
+  if (pError || !profile) return null;
+
+  // @ts-ignore
+  const value = profile[field] ?? 0;
+
+  const { count, error } = await supabase!
+    .from('profiles')
+    .select('*', { count: 'exact', head: true })
+    .eq('role', 'student')
+    .gt(field, value);
+
+  if (error) return null;
+
+  return (count ?? 0) + 1;
 }

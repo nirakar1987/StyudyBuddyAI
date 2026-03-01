@@ -44,6 +44,8 @@ export enum AppState {
   HOMEWORK_SCANNER,
   NCERT_SOLUTIONS,
   REVISION_CARDS,
+  LEADERBOARD,
+  DAILY_CHALLENGE,
 }
 
 export enum AvatarState {

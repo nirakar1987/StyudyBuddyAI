@@ -152,7 +152,7 @@ const Dashboard: React.FC<DashboardProps> = ({ context }) => {
 
             {/* Stats Cards with Enhanced Glassmorphism */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div onMouseEnter={playHoverSound} className="relative group bg-gradient-to-br from-blue-500/30 to-cyan-500/30 backdrop-blur-md p-8 rounded-3xl border-2 border-white/30 shadow-2xl hover:scale-105 hover:shadow-blue-500/50 transition-all duration-300 animate-slide-bounce overflow-hidden">
+                <div onClick={() => setAppState(AppState.LEADERBOARD)} onMouseEnter={playHoverSound} className="cursor-pointer relative group bg-gradient-to-br from-blue-500/30 to-cyan-500/30 backdrop-blur-md p-8 rounded-3xl border-2 border-white/30 shadow-2xl hover:scale-105 hover:shadow-blue-500/50 transition-all duration-300 animate-slide-bounce overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     <div className="text-center relative z-10">
                         <div className="text-5xl font-black bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent animate-neon-pulse drop-shadow-lg">
@@ -162,7 +162,7 @@ const Dashboard: React.FC<DashboardProps> = ({ context }) => {
                     </div>
                     <div className="absolute top-2 right-2 w-12 h-12 bg-blue-400/20 rounded-full blur-xl group-hover:scale-150 transition-transform"></div>
                 </div>
-                <div onMouseEnter={playHoverSound} className="relative group bg-gradient-to-br from-orange-500/30 to-red-500/30 backdrop-blur-md p-8 rounded-3xl border-2 border-white/30 shadow-2xl hover:scale-105 hover:shadow-orange-500/50 transition-all duration-300 animate-slide-bounce overflow-hidden" style={{ animationDelay: '0.1s' }}>
+                <div onClick={() => setAppState(AppState.LEADERBOARD)} onMouseEnter={playHoverSound} className="cursor-pointer relative group bg-gradient-to-br from-orange-500/30 to-red-500/30 backdrop-blur-md p-8 rounded-3xl border-2 border-white/30 shadow-2xl hover:scale-105 hover:shadow-orange-500/50 transition-all duration-300 animate-slide-bounce overflow-hidden" style={{ animationDelay: '0.1s' }}>
                     <div className="absolute inset-0 bg-gradient-to-br from-orange-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     <div className="text-center relative z-10">
                         <div className="text-5xl font-black bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent animate-neon-pulse drop-shadow-lg">
@@ -191,6 +191,8 @@ const Dashboard: React.FC<DashboardProps> = ({ context }) => {
                 </h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4 md:gap-5">
                     {[
+                        { icon: <span className="text-4xl">👑</span>, label: "Daily Quest", emoji: "✨", gradient: "from-yellow-400 to-orange-500", onClick: () => setAppState(AppState.DAILY_CHALLENGE) },
+                        { icon: <ChartBarIcon className="w-10 h-10" />, label: "Ranking", emoji: "🏆", gradient: "from-indigo-500 to-purple-600", onClick: () => setAppState(AppState.LEADERBOARD) },
                         { icon: <span className="text-4xl">📸</span>, label: "Scan HW", emoji: "🔍", gradient: "from-amber-500 to-orange-600", onClick: () => setAppState(AppState.HOMEWORK_SCANNER) },
                         { icon: <span className="text-4xl">📋</span>, label: "NCERT", emoji: "📚", gradient: "from-emerald-500 to-teal-600", onClick: () => setAppState(AppState.NCERT_SOLUTIONS) },
                         { icon: <span className="text-4xl">📝</span>, label: "Revise", emoji: "🔄", gradient: "from-violet-500 to-purple-600", onClick: () => setAppState(AppState.REVISION_CARDS) },

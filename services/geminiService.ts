@@ -1397,3 +1397,97 @@ RULES:
     throw new Error(handleApiError(error));
   }
 }
+
+// --- Daily Challenges ---
+
+export interface DailyChallenge {
+  question: string;
+  answer: string;
+  topic: string;
+  hint: string;
+}
+
+export async function generateDailyChallenge(grade: number, subject: string): Promise<DailyChallenge> {
+  const ai = getAiClient();
+  const today = new Date().toISOString().split('T')[0];
+
+  const prompt = `You are a creative teacher. Create a "Daily Challenge" for a student.
+    
+    Grade: ${grade}
+    Subject: ${subject}
+    Today's Date: ${today}
+    
+    The challenge should be a SINGLE, high-quality, thought-provoking question (not multiple choice).
+    It can be a math problem, a science concept explanation, or a word logic puzzle.
+    
+    Make it slightly difficult but solvable in 1-2 minutes.
+    
+    RULES:
+    - The 'answer' should be the core concept or numerical value needed.
+    - The 'hint' should be helpful but NOT give the answer.
+    - Provide a short 'topic' (1-2 words).
+    - If it's math, provide the numerical answer. If it's a concept, Provide the key term.
+    
+    Today's date is ${today}. Use this to make it unique for today if possible (e.g. "On this day in history" or just use it as a seed).`;
+
+  try {
+    const response = await withRetry(() => ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: [{ parts: [{ text: prompt }] }],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            question: { type: Type.STRING },
+            answer: { type: Type.STRING },
+            topic: { type: Type.STRING },
+            hint: { type: Type.STRING }
+          },
+          required: ["question", "answer", "topic", "hint"]
+        }
+      }
+    }));
+
+    return safeJsonParse<DailyChallenge>(response.text, "Failed to generate daily challenge.");
+  } catch (error) {
+    throw new Error(handleApiError(error));
+  }
+}
+
+export async function checkChallengeAnswer(question: string, userAnswer: string, correctAnswer: string): Promise<{ isCorrect: boolean, feedback: string }> {
+  const ai = getAiClient();
+  const prompt = `You are a helpful teacher. A student answered a "Daily Challenge" question.
+    
+    Question: "${question}"
+    Core Correct Answer: "${correctAnswer}"
+    Student's Answer: "${userAnswer}"
+    
+    Evaluate if the student's answer is correct SEMANTICALLY. 
+    Even if the wording is different or there are minor spelling mistakes, if the concept is correct, mark it as true.
+    
+    Provide constructive feedback explaining WHY or helping them improve.
+    If correct, be encouraging. If wrong, give a small clue without giving it away entirely.`;
+
+  try {
+    const response = await withRetry(() => ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: [{ parts: [{ text: prompt }] }],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            isCorrect: { type: Type.BOOLEAN },
+            feedback: { type: Type.STRING }
+          },
+          required: ["isCorrect", "feedback"]
+        }
+      }
+    }));
+
+    return safeJsonParse<{ isCorrect: boolean, feedback: string }>(response.text, "Failed to check challenge answer.");
+  } catch (error) {
+    throw new Error(handleApiError(error));
+  }
+}
