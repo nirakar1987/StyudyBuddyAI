@@ -15,12 +15,14 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*' } });
   }
+
   let update: TelegramUpdate;
   try {
     update = await req.json();
   } catch {
     return new Response(null, { status: 200 });
   }
+
   const chatId = update.message?.chat?.id;
   const text = (update.message?.text || '').trim();
 
@@ -38,7 +40,7 @@ Deno.serve(async (req) => {
 
   // Helper command to find Chat ID for setup (WORKS WITHOUT DB)
   if (text === '/myid') {
-    await sendTelegram(token, chatId, `🆔 Your Telegram Chat ID is: ${chatId}\n\nAdd this to Supabase Secrets as ADMIN_TELEGRAM_CHAT_ID.`);
+    await sendTelegram(token, chatId, `🆔 Your Telegram Chat ID is: <b>${chatId}</b>\n\nAdd this to Supabase Secrets as ADMIN_TELEGRAM_CHAT_ID.`);
     return new Response('ok', { status: 200 });
   }
 
@@ -61,10 +63,10 @@ Deno.serve(async (req) => {
       const { count: studentCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'student');
       const { count: quizCount } = await supabase.from('quiz_history').select('*', { count: 'exact', head: true });
 
-      const statsMsg = `📊 StudyBuddy Global Stats\n\n` +
-        `👨‍🎓 Total Students: ${studentCount || 0}\n` +
-        `📝 Quizzes Completed: ${quizCount || 0}\n\n` +
-        `Monitoring is ACTIVE.`;
+      const statsMsg = `📊 <b>StudyBuddy Global Stats</b>\n\n` +
+        `👨‍🎓 Total Students: <b>${studentCount || 0}</b>\n` +
+        `📝 Quizzes Completed: <b>${quizCount || 0}</b>\n\n` +
+        `Monitoring is <b>ACTIVE</b>.`;
 
       await sendTelegram(token, chatId, statsMsg);
       return new Response('ok', { status: 200 });
@@ -108,17 +110,18 @@ Deno.serve(async (req) => {
                      Analyze this student performance data: ${JSON.stringify(summaryData)}.
                      
                      STRICT FORMATTING RULES (CHATGPT STYLE):
-                     1. Use clear, BOLD headers for each section.
-                     2. Use bullet points for all observations.
-                     3. Use BOLD text for key metrics, subjects, or critical warnings.
+                     1. Use <b>BOLD HEADERS</b> for each section.
+                     2. Use bullet points (•) for all observations.
+                     3. Use <b>BOLD</b> text for key metrics, subjects, or critical warnings.
                      4. Keep it professional, structured, and concise. 
-                     5. NO conversational filler (e.g., skip "Here is the report" or "Hope this helps").
-                     6. Use Standard Markdown (*bold*, - bullets).
+                     5. NO conversational filler.
+                     6. IMPORTANT: Use HTML tags for formatting: <b>bold</b>, <i>italic</i>. 
+                     DO NOT use markdown symbols like * or _.
                      
                      SECTIONS TO INCLUDE:
-                     * PERFORMANCE TRENDS: Summarize how students are doing overall.
-                     * TOP PRIORITY TOPICS: Identify specific topics needing immediate attention.
-                     * STRATEGIC RECOMMENDATION: Provide one high-impact teaching strategy.`
+                     * <b>PERFORMANCE TRENDS</b>: Summarize overall status.
+                     * <b>TOP PRIORITY TOPICS</b>: Key areas for focus.
+                     * <b>STRATEGIC RECOMMENDATION</b>: One high-impact strategy.`
             }]
           }]
         })
@@ -128,7 +131,7 @@ Deno.serve(async (req) => {
 
       if (!aiResponse.ok) {
         console.error('Gemini Error:', aiData);
-        await sendTelegram(token, chatId, `⚠️ *AI Service Error*\n\nStatus: ${aiResponse.status}\nMessage: ${aiData.error?.message || 'Unknown error'}`);
+        await sendTelegram(token, chatId, `⚠️ <b>AI Service Error</b>\n\nStatus: ${aiResponse.status}\nMessage: ${aiData.error?.message || 'Unknown error'}`);
         return new Response('ok', { status: 200 });
       }
 
@@ -138,7 +141,8 @@ Deno.serve(async (req) => {
         return new Response('ok', { status: 200 });
       }
 
-      await sendTelegram(token, chatId, `🚀 *STUDYBUDDY AI INSIGHTS*\n\n${insightText}`);
+      // Send the AI Insight Report with HTML safety
+      await sendTelegram(token, chatId, `🚀 <b>STUDYBUDDY AI INSIGHTS</b>\n\n${insightText}`);
       return new Response('ok', { status: 200 });
     }
 
@@ -146,7 +150,7 @@ Deno.serve(async (req) => {
     if (text.startsWith('/start')) {
       const code = text.replace(/\/start\s*/i, '').trim();
       if (!code) {
-        await sendTelegram(token, chatId, '👋 *Welcome to StudyBuddy!*\n\nTo link your student\'s account:\n1. Open the app\n2. Go to *Profile* → *Parent Notifications*\n3. Enter the 6-digit code here.');
+        await sendTelegram(token, chatId, '👋 <b>Welcome to StudyBuddy!</b>\n\nTo link your student\'s account:\n1. Open the app\n2. Go to <b>Profile</b> → <b>Parent Notifications</b>\n3. Enter the 6-digit code here.');
         return new Response('ok', { status: 200 });
       }
 
@@ -157,7 +161,7 @@ Deno.serve(async (req) => {
         .single();
 
       if (!row || new Date(row.expires_at) < new Date()) {
-        await sendTelegram(token, chatId, '❌ *Invalid or Expired Code*\nPlease generate a new code in the app.');
+        await sendTelegram(token, chatId, '❌ <b>Invalid or Expired Code</b>\nPlease generate a new code in the app.');
         return new Response('ok', { status: 200 });
       }
 
@@ -167,12 +171,12 @@ Deno.serve(async (req) => {
         .eq('id', row.user_id);
 
       if (error) {
-        await sendTelegram(token, chatId, '❌ *Connection Error*\nPlease try again later.');
+        await sendTelegram(token, chatId, '❌ <b>Connection Error</b>\nPlease try again later.');
         return new Response('ok', { status: 200 });
       }
 
       await supabase.from('parent_link_codes').delete().eq('code', code);
-      await sendTelegram(token, chatId, '✅ *Success!*\nYou are now linked. You will receive real-time updates on your student\'s progress.');
+      await sendTelegram(token, chatId, '✅ <b>Success!</b>\nYou are now linked. You will receive real-time updates on your student\'s progress.');
       return new Response('ok', { status: 200 });
     }
   } catch (err) {
@@ -182,10 +186,30 @@ Deno.serve(async (req) => {
   return new Response('ok', { status: 200 });
 });
 
-async function sendTelegram(token: string, chatId: number, text: string, parseMode: string = 'Markdown'): Promise<void> {
-  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+async function sendTelegram(token: string, chatId: number, text: string, parseMode: string = 'HTML'): Promise<void> {
+  const resp = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, text, parse_mode: parseMode }),
+    body: JSON.stringify({
+      chat_id: chatId,
+      text: text,
+      parse_mode: parseMode
+    }),
   });
+
+  if (!resp.ok) {
+    const errorData = await resp.json();
+    console.error('Telegram Send Error:', errorData);
+    // If HTML parsing fails, fallback to plain text
+    if (parseMode === 'HTML') {
+      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: `⚠️ (Format Error - Sending as plain text)\n\n${text.replace(/<[^>]*>/g, '')}`
+        }),
+      });
+    }
+  }
 }
