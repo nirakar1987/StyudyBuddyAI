@@ -31,7 +31,6 @@ import PatternDetectiveView from './PatternDetectiveView';
 import ParentNotificationsView from './ParentNotificationsView';
 import HomeworkScannerView from './HomeworkScannerView';
 import NCERTSolutionsView from './NCERTSolutionsView';
-import RevisionCardsView from './RevisionCardsView';
 import LeaderboardView from './LeaderboardView';
 import DailyChallengeView from './DailyChallengeView';
 import MistakeRevisionView from './MistakeRevisionView';
@@ -102,8 +101,6 @@ const InteractionPanel: React.FC<InteractionPanelProps> = ({ context }) => {
         return <HomeworkScannerView context={context} />;
       case AppState.NCERT_SOLUTIONS:
         return <NCERTSolutionsView context={context} />;
-      case AppState.REVISION_CARDS:
-        return <RevisionCardsView context={context} />;
       case AppState.LEADERBOARD:
         return <LeaderboardView context={context} />;
       case AppState.DAILY_CHALLENGE:

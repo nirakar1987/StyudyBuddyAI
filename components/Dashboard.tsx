@@ -196,7 +196,6 @@ const Dashboard: React.FC<DashboardProps> = ({ context }) => {
                         { icon: <span className="text-4xl">📕</span>, label: "Mistakes", emoji: "❌", gradient: "from-red-600 to-rose-700", onClick: () => setAppState(AppState.MISTAKE_REVISION) },
                         { icon: <span className="text-4xl">📸</span>, label: "Scan HW", emoji: "🔍", gradient: "from-amber-500 to-orange-600", onClick: () => setAppState(AppState.HOMEWORK_SCANNER) },
                         { icon: <span className="text-4xl">📋</span>, label: "NCERT", emoji: "📚", gradient: "from-emerald-500 to-teal-600", onClick: () => setAppState(AppState.NCERT_SOLUTIONS) },
-                        { icon: <span className="text-4xl">📝</span>, label: "Revise", emoji: "🔄", gradient: "from-violet-500 to-purple-600", onClick: () => setAppState(AppState.REVISION_CARDS) },
                         { icon: <BookOpenIcon className="w-10 h-10" />, label: "Learn", emoji: "📖", gradient: "from-blue-600 to-cyan-600", onClick: startLesson },
                         { icon: <UploadIcon className="w-10 h-10" />, label: "Quiz", emoji: "📝", gradient: "from-green-600 to-emerald-600", onClick: handleStartQuizGeneration },
                         { icon: <span className="text-4xl">📱</span>, label: "Parent", emoji: "📲", gradient: "from-emerald-600 to-teal-700", onClick: () => setAppState(AppState.PARENT_NOTIFICATIONS) },
