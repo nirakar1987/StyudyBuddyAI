@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
   const res = await fetch(`${TELEGRAM_API}${token}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' }),
+    body: JSON.stringify({ chat_id: chatId, text }),
   });
   const result = await res.json();
   if (!result.ok) {

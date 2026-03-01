@@ -152,7 +152,7 @@ const ParentNotificationsView: React.FC<{ context: AppContextType }> = ({ contex
               <ol className="list-decimal list-inside space-y-2 text-slate-300 text-sm">
                 <li>Open Telegram and tap the link below (or search for <strong className="text-white">@{TELEGRAM_BOT_USERNAME}</strong>)</li>
                 <li>Tap <strong className="text-white">Start</strong> in the chat</li>
-                <li>Send this exact message: <code className="bg-slate-700 px-2 py-1 rounded text-amber-300 font-mono">/start {linkCode || 'CODE'}</code> (use the 6-digit code you generate below)</li>
+                <li>Send <strong className="text-white">one message only</strong>: type <code className="bg-slate-700 px-2 py-1 rounded text-amber-300 font-mono">/start</code> then a space, then the 6-digit code. Example: <code className="bg-slate-700 px-2 py-1 rounded text-amber-300 font-mono">/start 482917</code> (replace 482917 with your code)</li>
               </ol>
               <a
                 href={TELEGRAM_BOT_LINK}
@@ -188,7 +188,7 @@ const ParentNotificationsView: React.FC<{ context: AppContextType }> = ({ contex
                   </button>
                 </div>
                 <p className="text-slate-400 text-sm">
-                  Parent types in Telegram: <code className="bg-slate-700 px-2 py-1 rounded text-amber-300">/start {linkCode}</code>
+                  In Telegram, parent sends <strong>one message</strong>: <code className="bg-slate-700 px-2 py-1 rounded text-amber-300 font-mono">/start {linkCode}</code> (slash start, space, then the code)
                 </p>
                 <button
                   onClick={handleRefreshLinked}
