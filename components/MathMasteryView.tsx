@@ -53,6 +53,17 @@ const MathMasteryView: React.FC<MathMasteryViewProps> = ({ context }) => {
     const [speedMathActive, setSpeedMathActive] = useState(false);
     const [speedMathProblem, setSpeedMathProblem] = useState('');
     const [speedMathAnswer, setSpeedMathAnswer] = useState('');
+    const [speedDifficulty, setSpeedDifficulty] = useState<'easy' | 'medium' | 'hard'>('easy');
+    const [speedStreak, setSpeedStreak] = useState(0);
+    const [speedBestStreak, setSpeedBestStreak] = useState(0);
+    const [speedTotalCorrect, setSpeedTotalCorrect] = useState(0);
+    const [speedTotalWrong, setSpeedTotalWrong] = useState(0);
+    const [speedFlash, setSpeedFlash] = useState<'correct' | 'wrong' | null>(null);
+    const [speedGameOver, setSpeedGameOver] = useState(false);
+    const [speedBestScore, setSpeedBestScore] = useState(() => {
+        try { return parseInt(localStorage.getItem('mentalMathBest') || '0'); } catch { return 0; }
+    });
+    const speedTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const [patternAnswer, setPatternAnswer] = useState('');
 
     // Helper function to evaluate math expressions safely
@@ -219,6 +230,14 @@ const MathMasteryView: React.FC<MathMasteryViewProps> = ({ context }) => {
         }
     };
 
+    // Save speed math best score
+    useEffect(() => {
+        if (speedGameOver && gameScore > speedBestScore) {
+            setSpeedBestScore(gameScore);
+            try { localStorage.setItem('mentalMathBest', String(gameScore)); } catch { }
+        }
+    }, [speedGameOver]);
+
     const [diagnosticAnswer, setDiagnosticAnswer] = useState('');
     const diagnosticQuestions = [
         { topic: 'Addition', q: '45 + 37', a: '82' },
@@ -311,17 +330,27 @@ const MathMasteryView: React.FC<MathMasteryViewProps> = ({ context }) => {
     };
 
     // Speed Math Functions
-    const startSpeedMath = () => {
+    const startSpeedMath = (difficulty: 'easy' | 'medium' | 'hard' = speedDifficulty) => {
+        setSpeedDifficulty(difficulty);
         setSpeedMathActive(true);
-        setSpeedMathTime(60);
+        setSpeedGameOver(false);
+        const timeMap = { easy: 60, medium: 45, hard: 30 };
+        setSpeedMathTime(timeMap[difficulty]);
         setGameScore(0);
-        generateSpeedMathProblem();
+        setSpeedStreak(0);
+        setSpeedBestStreak(0);
+        setSpeedTotalCorrect(0);
+        setSpeedTotalWrong(0);
+        setSpeedFlash(null);
+        generateSpeedMathProblem(difficulty);
 
-        const timer = setInterval(() => {
+        if (speedTimerRef.current) clearInterval(speedTimerRef.current);
+        speedTimerRef.current = setInterval(() => {
             setSpeedMathTime(prev => {
                 if (prev <= 1) {
-                    clearInterval(timer);
+                    if (speedTimerRef.current) clearInterval(speedTimerRef.current);
                     setSpeedMathActive(false);
+                    setSpeedGameOver(true);
                     return 0;
                 }
                 return prev - 1;
@@ -329,36 +358,101 @@ const MathMasteryView: React.FC<MathMasteryViewProps> = ({ context }) => {
         }, 1000);
     };
 
-    const generateSpeedMathProblem = () => {
-        const ops = ['+', '-', '×', '÷'];
-        const op = ops[Math.floor(Math.random() * ops.length)];
-        const a = Math.floor(Math.random() * 20) + 1;
-        const b = Math.floor(Math.random() * 20) + 1;
+    const generateSpeedMathProblem = (difficulty: 'easy' | 'medium' | 'hard' = speedDifficulty) => {
+        const grade = studentProfile?.grade || 5;
+        let a: number, b: number, op: string, problem: string;
 
-        let problem = '';
-        if (op === '÷') {
-            const result = a * b;
-            problem = `${result} ${op} ${a}`;
-        } else {
+        if (difficulty === 'easy') {
+            const ops = ['+', '-', '×'];
+            op = ops[Math.floor(Math.random() * ops.length)];
+            a = Math.floor(Math.random() * (grade <= 5 ? 12 : 25)) + 1;
+            b = Math.floor(Math.random() * (grade <= 5 ? 12 : 25)) + 1;
+            if (op === '-' && a < b) [a, b] = [b, a];
+            if (op === '×') { a = Math.floor(Math.random() * 12) + 1; b = Math.floor(Math.random() * 12) + 1; }
             problem = `${a} ${op} ${b}`;
+        } else if (difficulty === 'medium') {
+            const ops = ['+', '-', '×', '÷'];
+            op = ops[Math.floor(Math.random() * ops.length)];
+            if (op === '÷') {
+                b = Math.floor(Math.random() * 12) + 2;
+                const result = Math.floor(Math.random() * 15) + 1;
+                a = b * result;
+                problem = `${a} ÷ ${b}`;
+            } else if (op === '×') {
+                a = Math.floor(Math.random() * 15) + 2;
+                b = Math.floor(Math.random() * 15) + 2;
+                problem = `${a} × ${b}`;
+            } else {
+                a = Math.floor(Math.random() * 100) + 10;
+                b = Math.floor(Math.random() * 100) + 10;
+                if (op === '-' && a < b) [a, b] = [b, a];
+                problem = `${a} ${op} ${b}`;
+            }
+        } else {
+            // Hard: multi-step, squares, larger numbers
+            const types = ['large_mult', 'square', 'two_step', 'large_div'];
+            const type = types[Math.floor(Math.random() * types.length)];
+            if (type === 'large_mult') {
+                a = Math.floor(Math.random() * 25) + 11;
+                b = Math.floor(Math.random() * 15) + 2;
+                problem = `${a} × ${b}`;
+            } else if (type === 'square') {
+                a = Math.floor(Math.random() * 20) + 5;
+                problem = `${a}²`;
+            } else if (type === 'two_step') {
+                a = Math.floor(Math.random() * 50) + 10;
+                b = Math.floor(Math.random() * 30) + 5;
+                const c = Math.floor(Math.random() * 20) + 1;
+                const ops2 = ['+', '-'];
+                const op2 = ops2[Math.floor(Math.random() * 2)];
+                problem = `${a} × ${b > 12 ? Math.floor(b / 3) : b} ${op2} ${c}`;
+            } else {
+                b = Math.floor(Math.random() * 20) + 2;
+                const result = Math.floor(Math.random() * 25) + 2;
+                a = b * result;
+                problem = `${a} ÷ ${b}`;
+            }
         }
 
-        setSpeedMathProblem(problem);
+        setSpeedMathProblem(problem!);
         setSpeedMathAnswer('');
     };
 
-    const checkSpeedMath = () => {
-        const problem = speedMathProblem.replace('×', '*').replace('÷', '/');
-        const correct = evaluateExpression(problem);
-        const userAns = parseFloat(speedMathAnswer);
-
-        if (correct !== null && Math.abs(userAns - correct) < 0.01) {
-            setGameScore(gameScore + 1);
-            generateSpeedMathProblem();
-        } else {
-            alert(`❌ Incorrect! The answer was ${correct}`);
-            generateSpeedMathProblem();
+    const handleSpeedAnswer = (value: string) => {
+        setSpeedMathAnswer(value);
+        let problemStr = speedMathProblem.replace(/×/g, '*').replace(/÷/g, '/');
+        // Handle squares
+        if (problemStr.includes('²')) {
+            const base = parseFloat(problemStr.replace('²', ''));
+            const correct = base * base;
+            if (parseFloat(value) === correct) {
+                onSpeedCorrect();
+            }
+            return;
         }
+        const correct = evaluateExpression(problemStr);
+        if (correct !== null && value !== '' && parseFloat(value) === correct) {
+            onSpeedCorrect();
+        }
+    };
+
+    const onSpeedCorrect = () => {
+        setSpeedFlash('correct');
+        setSpeedTotalCorrect(prev => prev + 1);
+        const newStreak = speedStreak + 1;
+        setSpeedStreak(newStreak);
+        if (newStreak > speedBestStreak) setSpeedBestStreak(newStreak);
+        // Points: base 1 + combo bonus
+        const comboBonus = newStreak >= 10 ? 3 : newStreak >= 5 ? 2 : 1;
+        setGameScore(prev => prev + comboBonus);
+        setTimeout(() => { setSpeedFlash(null); generateSpeedMathProblem(); }, 300);
+    };
+
+    const handleSpeedWrong = () => {
+        setSpeedFlash('wrong');
+        setSpeedTotalWrong(prev => prev + 1);
+        setSpeedStreak(0);
+        setTimeout(() => { setSpeedFlash(null); generateSpeedMathProblem(); }, 600);
     };
 
     // Pattern Finder Check
@@ -871,11 +965,11 @@ const MathMasteryView: React.FC<MathMasteryViewProps> = ({ context }) => {
 
                                 <button
                                     onClick={() => setActiveGame('speed')}
-                                    className="bg-white/10 rounded-xl p-6 hover:bg-white/20 transition-all text-left"
+                                    className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-xl p-6 hover:from-yellow-500/30 hover:to-orange-500/30 transition-all text-left border border-yellow-500/20"
                                 >
-                                    <div className="text-4xl mb-3">⚡</div>
-                                    <h3 className="text-xl font-bold text-white mb-2">Speed Math</h3>
-                                    <p className="text-slate-300 text-sm">Solve as fast as you can</p>
+                                    <div className="text-4xl mb-3">🧠</div>
+                                    <h3 className="text-xl font-bold text-white mb-2">Mental Math</h3>
+                                    <p className="text-slate-300 text-sm">Speed test with 3 difficulty levels</p>
                                 </button>
 
                                 <button
@@ -946,51 +1040,138 @@ const MathMasteryView: React.FC<MathMasteryViewProps> = ({ context }) => {
                                 )}
 
                                 {activeGame === 'speed' && (
-                                    <div className="bg-white/10 rounded-xl p-6 text-center">
-                                        <h3 className="text-2xl font-bold text-white mb-4">⚡ Speed Math</h3>
-                                        {!speedMathActive ? (
-                                            <button
-                                                onClick={startSpeedMath}
-                                                className="px-8 py-4 bg-yellow-600 hover:bg-yellow-500 text-white rounded-xl font-bold transition-all"
-                                            >
-                                                Start Game!
-                                            </button>
-                                        ) : (
-                                            <>
-                                                <p className="text-white/70 mb-6">Solve as many problems as you can!</p>
-                                                <div className="bg-slate-700 rounded-xl p-8 mb-6">
-                                                    <p className="text-5xl font-black text-white mb-4">{speedMathProblem} = ?</p>
+                                    <div className="rounded-2xl overflow-hidden">
+                                        {/* Game Over Summary */}
+                                        {speedGameOver && (
+                                            <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-8 text-center border border-white/10 animate-fade-in">
+                                                <div className="text-6xl mb-4">{gameScore >= 20 ? '🏆' : gameScore >= 10 ? '🌟' : gameScore >= 5 ? '💪' : '📚'}</div>
+                                                <h3 className="text-3xl font-black text-white mb-2">Game Over!</h3>
+                                                <p className="text-5xl font-black bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent mb-6">{gameScore} points</p>
+                                                {gameScore > speedBestScore && (
+                                                    <div className="mb-4 px-4 py-2 bg-yellow-500/20 border border-yellow-500/30 rounded-xl inline-block">
+                                                        <p className="text-yellow-400 font-bold text-sm">🎉 NEW PERSONAL BEST!</p>
+                                                    </div>
+                                                )}
+                                                <div className="grid grid-cols-3 gap-4 mb-6">
+                                                    <div className="bg-white/5 rounded-xl p-3">
+                                                        <p className="text-green-400 text-2xl font-black">{speedTotalCorrect}</p>
+                                                        <p className="text-slate-500 text-xs font-bold">✅ Correct</p>
+                                                    </div>
+                                                    <div className="bg-white/5 rounded-xl p-3">
+                                                        <p className="text-red-400 text-2xl font-black">{speedTotalWrong}</p>
+                                                        <p className="text-slate-500 text-xs font-bold">❌ Wrong</p>
+                                                    </div>
+                                                    <div className="bg-white/5 rounded-xl p-3">
+                                                        <p className="text-orange-400 text-2xl font-black">{speedBestStreak}🔥</p>
+                                                        <p className="text-slate-500 text-xs font-bold">Best Streak</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-3 justify-center">
+                                                    <button onClick={() => startSpeedMath(speedDifficulty)} className="px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-xl text-white font-bold hover:scale-105 transition-all shadow-lg shadow-orange-500/20">
+                                                        🔄 Play Again
+                                                    </button>
+                                                    <button onClick={() => { setActiveGame(null); setSpeedGameOver(false); }} className="px-6 py-3 bg-slate-700 rounded-xl text-white font-bold hover:bg-slate-600 transition-all">
+                                                        Back
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Difficulty Selection */}
+                                        {!speedMathActive && !speedGameOver && (
+                                            <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-8 text-center border border-white/10">
+                                                <div className="text-5xl mb-3">🧠</div>
+                                                <h3 className="text-2xl font-black text-white mb-2">Mental Math Speed Test</h3>
+                                                <p className="text-slate-400 text-sm mb-6">Solve as many problems as you can before time runs out!</p>
+                                                {speedBestScore > 0 && (
+                                                    <p className="text-yellow-400 text-sm font-bold mb-4">🏆 Personal Best: {speedBestScore} points</p>
+                                                )}
+                                                <div className="grid grid-cols-3 gap-3 mb-6 max-w-md mx-auto">
+                                                    {[
+                                                        { key: 'easy' as const, label: 'Easy', emoji: '😊', time: '60s', desc: 'Basic +, -, ×', color: 'from-green-500 to-emerald-600' },
+                                                        { key: 'medium' as const, label: 'Medium', emoji: '🤔', time: '45s', desc: '÷, larger numbers', color: 'from-yellow-500 to-orange-600' },
+                                                        { key: 'hard' as const, label: 'Hard', emoji: '🔥', time: '30s', desc: 'Squares, multi-step', color: 'from-red-500 to-rose-600' },
+                                                    ].map(d => (
+                                                        <button
+                                                            key={d.key}
+                                                            onClick={() => startSpeedMath(d.key)}
+                                                            className={`p-4 rounded-xl bg-gradient-to-br ${d.color} text-white hover:scale-105 transition-all shadow-lg active:scale-95`}
+                                                        >
+                                                            <div className="text-2xl mb-1">{d.emoji}</div>
+                                                            <div className="font-black text-sm">{d.label}</div>
+                                                            <div className="text-white/70 text-[10px] mt-1">{d.time} • {d.desc}</div>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Active Game */}
+                                        {speedMathActive && (
+                                            <div className={`bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 border-2 transition-all duration-300 ${speedFlash === 'correct' ? 'border-green-500 shadow-lg shadow-green-500/30' :
+                                                speedFlash === 'wrong' ? 'border-red-500 shadow-lg shadow-red-500/30' :
+                                                    'border-white/10'
+                                                }`}>
+                                                {/* Top Bar: Time + Score + Streak */}
+                                                <div className="flex items-center justify-between mb-6">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black text-xl ${speedMathTime <= 10 ? 'bg-red-500/20 text-red-400 animate-pulse' :
+                                                            speedMathTime <= 20 ? 'bg-yellow-500/20 text-yellow-400' :
+                                                                'bg-blue-500/20 text-blue-400'
+                                                            }`}>
+                                                            {speedMathTime}
+                                                        </div>
+                                                        <span className="text-slate-500 text-xs font-bold">SEC</span>
+                                                    </div>
+                                                    {speedStreak >= 3 && (
+                                                        <div className="px-3 py-1 bg-orange-500/20 rounded-full text-orange-400 text-xs font-black animate-pulse">
+                                                            🔥 {speedStreak} streak! {speedStreak >= 10 ? '×3' : speedStreak >= 5 ? '×2' : ''}
+                                                        </div>
+                                                    )}
+                                                    <div className="text-right">
+                                                        <p className="text-3xl font-black text-white">{gameScore}</p>
+                                                        <p className="text-slate-500 text-[10px] font-bold uppercase">Points</p>
+                                                    </div>
+                                                </div>
+
+                                                {/* Problem Display */}
+                                                <div className={`rounded-2xl p-8 mb-6 text-center transition-all duration-300 ${speedFlash === 'correct' ? 'bg-green-900/30' :
+                                                    speedFlash === 'wrong' ? 'bg-red-900/30' :
+                                                        'bg-slate-700/50'
+                                                    }`}>
+                                                    <p className="text-5xl md:text-6xl font-black text-white mb-4 tracking-wider">
+                                                        {speedMathProblem} = ?
+                                                    </p>
                                                     <input
                                                         type="number"
-                                                        className="w-32 px-4 py-3 bg-slate-600 text-white rounded-lg text-center text-2xl font-bold"
+                                                        className="w-40 px-4 py-4 bg-slate-800 border-2 border-white/20 focus:border-yellow-500 text-white rounded-xl text-center text-3xl font-black outline-none transition-colors"
                                                         placeholder="?"
                                                         value={speedMathAnswer}
-                                                        onChange={(e) => {
-                                                            setSpeedMathAnswer(e.target.value);
-                                                            // Auto check on input change
-                                                            const correct = evaluateExpression(speedMathProblem.replace('×', '*').replace('÷', '/'));
-                                                            if (parseFloat(e.target.value) === correct) {
-                                                                setGameScore(prev => prev + 1);
-                                                                setSpeedMathAnswer('');
-                                                                generateSpeedMathProblem();
+                                                        onChange={(e) => handleSpeedAnswer(e.target.value)}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter' && speedMathAnswer) {
+                                                                // Check if wrong and skip
+                                                                handleSpeedWrong();
                                                             }
                                                         }}
                                                         autoFocus
                                                     />
-                                                </div>
-                                                <div className="flex justify-center gap-8">
-                                                    <div>
-                                                        <p className="text-slate-400 text-sm">Time Left</p>
-                                                        <p className={`text-3xl font-black ${speedMathTime <= 10 ? 'text-red-500 animate-pulse' : 'text-yellow-400'}`}>
-                                                            {speedMathTime}s
-                                                        </p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-slate-400 text-sm">Score</p>
-                                                        <p className="text-3xl font-black text-green-400">{gameScore}</p>
+                                                    <div className="flex gap-2 justify-center mt-4">
+                                                        <button onClick={() => { if (speedMathAnswer) handleSpeedWrong(); }} className="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg text-xs font-bold transition-all">
+                                                            Skip →
+                                                        </button>
                                                     </div>
                                                 </div>
-                                            </>
+
+                                                {/* Progress Bar */}
+                                                <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
+                                                    <div
+                                                        className={`h-full rounded-full transition-all duration-1000 ${speedMathTime <= 10 ? 'bg-red-500' : speedMathTime <= 20 ? 'bg-yellow-500' : 'bg-emerald-500'
+                                                            }`}
+                                                        style={{ width: `${(speedMathTime / (speedDifficulty === 'easy' ? 60 : speedDifficulty === 'medium' ? 45 : 30)) * 100}%` }}
+                                                    />
+                                                </div>
+                                            </div>
                                         )}
                                     </div>
                                 )}
