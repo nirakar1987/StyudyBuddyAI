@@ -34,31 +34,50 @@ Deno.serve(async (req) => {
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const supabase = createClient(supabaseUrl, serviceKey);
 
-  const { data: profile, error: profileError } = await supabase
+  const { data: profile } = await supabase
     .from('profiles')
     .select('parent_telegram_chat_id, full_name')
     .eq('id', userId)
     .single();
 
-  if (profileError || !profile?.parent_telegram_chat_id) {
-    return new Response(JSON.stringify({ ok: false, reason: 'parent not linked' }), { status: 200 });
+  const adminChatId = Deno.env.get('ADMIN_TELEGRAM_CHAT_ID');
+  const parentChatId = profile?.parent_telegram_chat_id;
+
+  if (!parentChatId && !adminChatId) {
+    return new Response(JSON.stringify({ ok: false, reason: 'no recipients' }), { status: 200 });
   }
 
-  const chatId = profile.parent_telegram_chat_id;
   const title = eventType === 'quiz_complete' ? '📝 Quiz completed' : eventType === 'practice_complete' ? '💡 Practice done' : '📚 Activity';
   const text = `${title}\n\n${summary}`;
 
-  const res = await fetch(`${TELEGRAM_API}${token}/sendMessage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, text }),
-  });
-  const result = await res.json();
-  if (!result.ok) {
-    console.error('Telegram send error:', result);
-    return new Response(JSON.stringify({ error: result.description }), { status: 502 });
+  const sendPromises = [];
+
+  // 1. Send to linked parent
+  if (parentChatId) {
+    sendPromises.push(
+      fetch(`${TELEGRAM_API}${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: parentChatId, text }),
+      })
+    );
   }
-  return new Response(JSON.stringify({ ok: true }), {
+
+  // 2. Send to global admin monitor
+  if (adminChatId) {
+    const adminText = `🚨 GLOBAL MONITOR 🚨\nStudent: ${profile?.full_name || 'Anonymous'}\n\n${text}`;
+    sendPromises.push(
+      fetch(`${TELEGRAM_API}${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: adminChatId, text: adminText }),
+      })
+    );
+  }
+
+  const results = await Promise.all(sendPromises);
+
+  return new Response(JSON.stringify({ ok: true, sent: results.length }), {
     headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
   });
 });
