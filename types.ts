@@ -42,6 +42,7 @@ export enum AppState {
   SCHOOL_PROJECTS,
   PARENT_NOTIFICATIONS,
   HOMEWORK_SCANNER,
+  NCERT_SOLUTIONS,
 }
 
 export enum AvatarState {

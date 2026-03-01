@@ -1214,3 +1214,115 @@ BE ACCURATE: Show full mathematical working if it's a math problem. For science,
     throw new Error(handleApiError(error));
   }
 }
+
+// --- NCERT Solutions ---
+
+export interface NCERTChapter {
+  chapterNumber: number;
+  title: string;
+  description: string;
+}
+
+export interface NCERTAnswer {
+  questionNumber: number;
+  question: string;
+  shortAnswer: string;
+  detailedExplanation: string;
+  tip: string;
+}
+
+export async function getNCERTChapters(
+  classNum: number,
+  subject: string
+): Promise<NCERTChapter[]> {
+  const ai = getAiClient();
+  const prompt = `List ALL the chapters from the official NCERT ${subject} textbook for Class ${classNum} (CBSE India curriculum).
+  
+  IMPORTANT: Use the EXACT official NCERT chapter titles. Do NOT make up chapters.
+  For example:
+  - Class 8 Science: "Crop Production and Management", "Microorganisms: Friend and Foe", etc.
+  - Class 10 Math: "Real Numbers", "Polynomials", "Pair of Linear Equations in Two Variables", etc.
+  
+  Return ALL chapters in order.`;
+
+  try {
+    const response = await withRetry(() => ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: [{ parts: [{ text: prompt }] }],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              chapterNumber: { type: Type.NUMBER },
+              title: { type: Type.STRING },
+              description: { type: Type.STRING }
+            },
+            required: ["chapterNumber", "title", "description"]
+          }
+        }
+      }
+    }));
+
+    return safeJsonParse<NCERTChapter[]>(response.text, "Failed to load chapters.");
+  } catch (error) {
+    throw new Error(handleApiError(error));
+  }
+}
+
+export async function getNCERTExerciseAnswers(
+  classNum: number,
+  subject: string,
+  chapterTitle: string
+): Promise<NCERTAnswer[]> {
+  const ai = getAiClient();
+  const prompt = `You are an expert CBSE teacher. Generate the NCERT textbook exercise questions and their model answers for:
+
+Class: ${classNum}
+Subject: ${subject}
+Chapter: "${chapterTitle}"
+
+INSTRUCTIONS:
+1. List the ACTUAL exercise questions from this NCERT chapter (the ones at the end of the chapter).
+2. For each question, provide:
+   - "shortAnswer": A concise 1-3 line answer (perfect for quick revision or exams)
+   - "detailedExplanation": A thorough explanation (3-6 lines) that helps the student UNDERSTAND the concept
+   - "tip": A memory trick, formula, or exam tip related to this question
+3. Cover ALL major exercise questions (aim for 8-15 questions).
+4. Use simple language appropriate for Class ${classNum} students.
+5. For Math: Show full step-by-step working.
+6. For Science: Include diagrams described in text if relevant.
+7. For Hindi/English: Include meaning of difficult words.
+
+BE ACCURATE: These should match the actual NCERT textbook exercises as closely as possible.`;
+
+  try {
+    const response = await withRetry(() => ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: [{ parts: [{ text: prompt }] }],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              questionNumber: { type: Type.NUMBER },
+              question: { type: Type.STRING },
+              shortAnswer: { type: Type.STRING },
+              detailedExplanation: { type: Type.STRING },
+              tip: { type: Type.STRING }
+            },
+            required: ["questionNumber", "question", "shortAnswer", "detailedExplanation", "tip"]
+          }
+        }
+      }
+    }));
+
+    return safeJsonParse<NCERTAnswer[]>(response.text, "Failed to generate answers.");
+  } catch (error) {
+    throw new Error(handleApiError(error));
+  }
+}
