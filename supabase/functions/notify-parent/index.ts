@@ -43,11 +43,17 @@ Deno.serve(async (req) => {
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const supabase = createClient(supabaseUrl, serviceKey);
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('parent_telegram_chat_id, full_name, name')
+    .select('parent_telegram_chat_id, full_name')
     .eq('id', userId)
     .single();
+
+  if (profileError) {
+    console.error(`Profile lookup failed for user ${userId}:`, profileError);
+  }
+
+  console.log(`notify-parent: userId=${userId}, parentChatId=${profile?.parent_telegram_chat_id || 'none'}, fullName=${profile?.full_name || 'unknown'}`);
 
   const adminChatId = Deno.env.get('ADMIN_TELEGRAM_CHAT_ID');
   const parentChatId = profile?.parent_telegram_chat_id;
@@ -64,12 +70,14 @@ Deno.serve(async (req) => {
 
   // 1. Send to linked parent
   if (parentChatId) {
+    console.log(`Sending to parent chatId: ${parentChatId}`);
     sendPromises.push(sendTelegram(token, Number(parentChatId), text));
   }
 
   // 2. Send to global admin monitor
   if (adminChatId) {
-    const adminText = `🚨 <b>GLOBAL MONITOR</b> 🚨\nStudent: <b>${profile?.full_name || profile?.name || 'Anonymous'}</b>\n\n${text}`;
+    console.log(`Sending to admin chatId: ${adminChatId}`);
+    const adminText = `🚨 <b>GLOBAL MONITOR</b> 🚨\nStudent: <b>${profile?.full_name || 'Anonymous'}</b>\n\n${text}`;
     sendPromises.push(sendTelegram(token, Number(adminChatId), adminText));
   }
 
